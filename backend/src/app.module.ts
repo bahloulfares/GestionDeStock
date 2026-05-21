@@ -1,0 +1,73 @@
+import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
+import { JwtModule } from '@nestjs/jwt';
+
+import { PrismaModule } from './prisma/prisma.module';
+import { AuthModule } from './auth/auth.module';
+import { UsersModule } from './users/users.module';
+import { ProductsModule } from './products/products.module';
+import { CategoriesModule } from './categories/categories.module';
+import { SuppliersModule } from './suppliers/suppliers.module';
+import { PurchasesModule } from './purchases/purchases.module';
+import { SalesModule } from './sales/sales.module';
+import { DashboardModule } from './dashboard/dashboard.module';
+import { ReportsModule } from './reports/reports.module';
+import { InventoryModule } from './inventory/inventory.module';
+import { ActivityLogsModule } from './activity-logs/activity-logs.module';
+import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
+import { RolesGuard } from './common/guards/roles.guard';
+
+@Module({
+  imports: [
+    // ─── Configuration ───────────────────────────────────────────────────────
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: '.env',
+    }),
+
+    // ─── Rate Limiting ───────────────────────────────────────────────────────
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000,   // 1 minute
+        limit: 100,   // 100 requêtes par minute par défaut
+      },
+    ]),
+
+    // ─── JWT (global pour les guards) ────────────────────────────────────────
+    JwtModule.register({ global: true }),
+
+    // ─── Base de données ─────────────────────────────────────────────────────
+    PrismaModule,
+
+    // ─── Modules métier ──────────────────────────────────────────────────────
+    AuthModule,
+    UsersModule,
+    ProductsModule,
+    CategoriesModule,
+    SuppliersModule,
+    PurchasesModule,
+    SalesModule,
+    DashboardModule,
+    ReportsModule,
+    InventoryModule,
+    ActivityLogsModule,
+  ],
+  providers: [
+    // Guards globaux — appliqués sur toutes les routes
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,
+    },
+  ],
+})
+export class AppModule {}

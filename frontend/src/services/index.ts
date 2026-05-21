@@ -1,0 +1,88 @@
+import api from './api';
+
+// ─── Auth ──────────────────────────────────────────────────────────────────
+export const authService = {
+  login: (email: string, password: string) =>
+    api.post('/auth/login', { email, password }).then(r => r.data),
+
+  register: (shopName: string, email: string, password: string, phone?: string) =>
+    api.post('/auth/register', { shopName, email, password, phone }).then(r => r.data),
+
+  logout: (refreshToken: string) =>
+    api.post('/auth/logout', { refreshToken }),
+};
+
+// ─── Dashboard ─────────────────────────────────────────────────────────────
+export const dashboardService = {
+  get: () => api.get('/dashboard').then(r => r.data),
+};
+
+// ─── Products ──────────────────────────────────────────────────────────────
+export const productsService = {
+  getAll: (params?: Record<string, any>) => api.get('/products', { params }).then(r => r.data),
+  getAlerts: () => api.get('/products/alerts').then(r => r.data),
+  create: (data: any) => api.post('/products', data).then(r => r.data),
+  update: (id: string, data: any) => api.put(`/products/${id}`, data).then(r => r.data),
+  remove: (id: string) => api.delete(`/products/${id}`).then(r => r.data),
+};
+
+// ─── Categories ────────────────────────────────────────────────────────────
+export const categoriesService = {
+  getAll: () => api.get('/categories').then(r => r.data),
+  create: (data: { name: string }) => api.post('/categories', data).then(r => r.data),
+  update: (id: string, data: { name: string }) => api.put(`/categories/${id}`, data).then(r => r.data),
+  remove: (id: string) => api.delete(`/categories/${id}`).then(r => r.data),
+};
+
+// ─── Suppliers ─────────────────────────────────────────────────────────────
+export const suppliersService = {
+  getAll: (search?: string) => api.get('/suppliers', { params: { search } }).then(r => r.data),
+  create: (data: any) => api.post('/suppliers', data).then(r => r.data),
+  update: (id: string, data: any) => api.put(`/suppliers/${id}`, data).then(r => r.data),
+  remove: (id: string) => api.delete(`/suppliers/${id}`).then(r => r.data),
+};
+
+// ─── Purchase Orders ───────────────────────────────────────────────────────
+export const purchasesService = {
+  getAll: (params?: Record<string, any>) => api.get('/purchase-orders', { params }).then(r => r.data),
+  getOne: (id: string) => api.get(`/purchase-orders/${id}`).then(r => r.data),
+  create: (data: any) => api.post('/purchase-orders', data).then(r => r.data),
+  validate: (id: string) => api.put(`/purchase-orders/${id}/validate`).then(r => r.data),
+  cancel: (id: string) => api.put(`/purchase-orders/${id}/cancel`).then(r => r.data),
+  remove: (id: string) => api.delete(`/purchase-orders/${id}`).then(r => r.data),
+};
+
+// ─── Sales ─────────────────────────────────────────────────────────────────
+export const salesService = {
+  getAll: (params?: Record<string, any>) => api.get('/sales', { params }).then(r => r.data),
+  getOne: (id: string) => api.get(`/sales/${id}`).then(r => r.data),
+  create: (data: any) => api.post('/sales', data).then(r => r.data),
+  cancel: (id: string, reason: string) => api.post(`/sales/${id}/cancel`, { reason }).then(r => r.data),
+};
+
+// ─── Reports ───────────────────────────────────────────────────────────────
+export const reportsService = {
+  topProducts: (params?: Record<string, any>) => api.get('/reports/top-products', { params }).then(r => r.data),
+  salesByPeriod: (params?: Record<string, any>) => api.get('/reports/sales-by-period', { params }).then(r => r.data),
+  stockValue: () => api.get('/reports/stock-value').then(r => r.data),
+  stockAlerts: () => api.get('/reports/stock-alerts').then(r => r.data),
+};
+
+// ─── Inventory ─────────────────────────────────────────────────────────────
+export const inventoryService = {
+  getAll: () => api.get('/inventory').then(r => r.data),
+  getOne: (id: string) => api.get(`/inventory/${id}`).then(r => r.data),
+  create: (data: any) => api.post('/inventory', data).then(r => r.data),
+};
+
+// ─── Users ─────────────────────────────────────────────────────────────────
+export const usersService = {
+  getAll: () => api.get('/users').then(r => r.data),
+  create: (data: any) => api.post('/users', data).then(r => r.data),
+  update: (id: string, data: any) => api.put(`/users/${id}`, data).then(r => r.data),
+};
+
+// ─── Activity Logs ─────────────────────────────────────────────────────────
+export const activityLogsService = {
+  getAll: (params?: Record<string, any>) => api.get('/activity-logs', { params }).then(r => r.data),
+};

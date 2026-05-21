@@ -1,0 +1,292 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── ENUM ────────────────────────────────────────────────────────────────────
+
+enum UserRole {
+  ADMIN
+  EMPLOYEE
+}
+
+enum OrderStatus {
+  DRAFT
+  VALIDATED
+  CANCELLED
+}
+
+enum SaleStatus {
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  CASH
+  TRANSFER
+  CREDIT
+}
+
+// ─── TENANTS ─────────────────────────────────────────────────────────────────
+
+model Tenant {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  phone     String?
+  plan      String   @default("basic")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  users          User[]
+  categories     Category[]
+  products       Product[]
+  suppliers      Supplier[]
+  purchaseOrders PurchaseOrder[]
+  sales          Sale[]
+  activityLogs   ActivityLog[]
+  inventorySessions InventorySession[]
+
+  @@map("tenants")
+}
+
+// ─── USERS ───────────────────────────────────────────────────────────────────
+
+model User {
+  id           String   @id @default(uuid())
+  tenantId     String   @map("tenant_id")
+  email        String
+  passwordHash String   @map("password_hash")
+  role         UserRole @default(EMPLOYEE)
+  isActive     Boolean  @default(true) @map("is_active")
+  isVerified   Boolean  @default(false) @map("is_verified")
+  verifyToken  String?  @map("verify_token")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  tenant       Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tokenStore   TokenStore[]
+  purchaseOrders PurchaseOrder[]
+  sales        Sale[]
+  activityLogs ActivityLog[]
+  inventorySessions InventorySession[]
+
+  @@unique([tenantId, email])
+  @@index([tenantId])
+  @@map("users")
+}
+
+// ─── TOKEN STORE (Refresh tokens) ────────────────────────────────────────────
+
+model TokenStore {
+  id               String   @id @default(uuid())
+  userId           String   @map("user_id")
+  refreshTokenHash String   @map("refresh_token_hash")
+  expiresAt        DateTime @map("expires_at")
+  revoked          Boolean  @default(false)
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("token_store")
+}
+
+// ─── CATEGORIES ──────────────────────────────────────────────────────────────
+
+model Category {
+  id       String @id @default(uuid())
+  tenantId String @map("tenant_id")
+  name     String
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  products Product[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@map("categories")
+}
+
+// ─── PRODUCTS ────────────────────────────────────────────────────────────────
+
+model Product {
+  id         String  @id @default(uuid())
+  tenantId   String  @map("tenant_id")
+  categoryId String? @map("category_id")
+  name       String
+  reference  String?
+  priceBuy   Decimal @map("price_buy") @db.Decimal(10, 3)
+  priceSell  Decimal @map("price_sell") @db.Decimal(10, 3)
+  qty        Int     @default(0)
+  minStock   Int     @default(5) @map("min_stock")
+  isActive   Boolean @default(true) @map("is_active")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  category      Category?      @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  purchaseItems PurchaseItem[]
+  saleItems     SaleItem[]
+  inventoryItems InventoryItem[]
+
+  @@index([tenantId])
+  @@index([tenantId, categoryId])
+  @@map("products")
+}
+
+// ─── SUPPLIERS ───────────────────────────────────────────────────────────────
+
+model Supplier {
+  id            String  @id @default(uuid())
+  tenantId      String  @map("tenant_id")
+  name          String
+  phone         String?
+  email         String?
+  city          String?
+  paymentTerms  String? @map("payment_terms")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  tenant         Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  purchaseOrders PurchaseOrder[]
+
+  @@index([tenantId])
+  @@map("suppliers")
+}
+
+// ─── PURCHASE ORDERS ─────────────────────────────────────────────────────────
+
+model PurchaseOrder {
+  id            String      @id @default(uuid())
+  tenantId      String      @map("tenant_id")
+  supplierId    String      @map("supplier_id")
+  date          DateTime    @default(now())
+  invoiceNumber String?     @map("invoice_number")
+  status        OrderStatus @default(DRAFT)
+  notes         String?
+  createdBy     String      @map("created_by")
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+
+  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  supplier      Supplier       @relation(fields: [supplierId], references: [id])
+  createdByUser User           @relation(fields: [createdBy], references: [id])
+  items         PurchaseItem[]
+
+  @@index([tenantId])
+  @@index([tenantId, supplierId])
+  @@map("purchase_orders")
+}
+
+model PurchaseItem {
+  id        String  @id @default(uuid())
+  orderId   String  @map("order_id")
+  productId String  @map("product_id")
+  qty       Int
+  priceBuy  Decimal @map("price_buy") @db.Decimal(10, 3)
+
+  order   PurchaseOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product       @relation(fields: [productId], references: [id])
+
+  @@index([orderId])
+  @@map("purchase_items")
+}
+
+// ─── SALES ───────────────────────────────────────────────────────────────────
+
+model Sale {
+  id            String        @id @default(uuid())
+  tenantId      String        @map("tenant_id")
+  date          DateTime      @default(now())
+  total         Decimal       @db.Decimal(10, 3)
+  paymentMethod PaymentMethod @default(CASH) @map("payment_method")
+  status        SaleStatus    @default(COMPLETED)
+  notes         String?
+  cancelReason  String?       @map("cancel_reason")
+  createdBy     String        @map("created_by")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  tenant        Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdByUser User       @relation(fields: [createdBy], references: [id])
+  items         SaleItem[]
+
+  @@index([tenantId])
+  @@index([tenantId, date])
+  @@map("sales")
+}
+
+model SaleItem {
+  id        String  @id @default(uuid())
+  saleId    String  @map("sale_id")
+  productId String  @map("product_id")
+  qty       Int
+  priceSell Decimal @map("price_sell") @db.Decimal(10, 3)
+
+  sale    Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([saleId])
+  @@map("sale_items")
+}
+
+// ─── INVENTORY ───────────────────────────────────────────────────────────────
+
+model InventorySession {
+  id        String   @id @default(uuid())
+  tenantId  String   @map("tenant_id")
+  date      DateTime @default(now())
+  notes     String?
+  createdBy String   @map("created_by")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  tenant        Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdByUser User            @relation(fields: [createdBy], references: [id])
+  items         InventoryItem[]
+
+  @@index([tenantId])
+  @@map("inventory_sessions")
+}
+
+model InventoryItem {
+  id          String @id @default(uuid())
+  sessionId   String @map("session_id")
+  productId   String @map("product_id")
+  qtySystem   Int    @map("qty_system")
+  qtyPhysical Int    @map("qty_physical")
+  difference  Int
+  comment     String?
+
+  session InventorySession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  product Product          @relation(fields: [productId], references: [id])
+
+  @@index([sessionId])
+  @@map("inventory_items")
+}
+
+// ─── ACTIVITY LOGS ───────────────────────────────────────────────────────────
+
+model ActivityLog {
+  id         String   @id @default(uuid())
+  tenantId   String   @map("tenant_id")
+  userId     String   @map("user_id")
+  action     String
+  entityType String   @map("entity_type")
+  entityId   String?  @map("entity_id")
+  metadata   Json?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@index([tenantId])
+  @@index([tenantId, createdAt])
+  @@map("activity_logs")
+}

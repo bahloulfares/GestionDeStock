@@ -1,0 +1,95 @@
+import { NestFactory } from '@nestjs/core';
+import { ValidationPipe } from '@nestjs/common';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { ConfigService } from '@nestjs/config';
+import helmet from 'helmet';
+import { AppModule } from './app.module';
+
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
+  const configService = app.get(ConfigService);
+
+  // ─── Préfixe API ──────────────────────────────────────────────────────────
+  const apiPrefix = configService.get<string>('API_PREFIX', 'api');
+  app.setGlobalPrefix(apiPrefix);
+
+  // ─── Sécurité : Helmet ────────────────────────────────────────────────────
+  app.use(
+    helmet({
+      crossOriginEmbedderPolicy: false,
+      contentSecurityPolicy: {
+        directives: {
+          imgSrc: [`'self'`, 'data:', 'https:'],
+          scriptSrc: [`'self'`, `https: 'unsafe-inline'`],
+          styleSrc: [`'self'`, `'unsafe-inline'`],
+          defaultSrc: [`'self'`],
+        },
+      },
+    }),
+  );
+
+  // ─── CORS ─────────────────────────────────────────────────────────────────
+  const corsOrigins = configService
+    .get<string>('CORS_ORIGINS', 'http://localhost:5173')
+    .split(',')
+    .map(o => o.trim());
+
+  app.enableCors({
+    origin: corsOrigins,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  });
+
+  // ─── Validation globale ───────────────────────────────────────────────────
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+      transformOptions: {
+        enableImplicitConversion: true,
+      },
+    }),
+  );
+
+  // ─── Swagger ──────────────────────────────────────────────────────────────
+  if (configService.get<string>('NODE_ENV') !== 'production') {
+    const swaggerConfig = new DocumentBuilder()
+      .setTitle('StockTN API')
+      .setDescription('API SaaS Gestion de Stocks — Boutiques Accessoires Téléphones Tunisie')
+      .setVersion('1.0')
+      .addBearerAuth(
+        { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
+        'JWT',
+      )
+      .addTag('Auth', 'Authentification et gestion des sessions')
+      .addTag('Products', 'Gestion des produits')
+      .addTag('Categories', 'Gestion des catégories')
+      .addTag('Suppliers', 'Gestion des fournisseurs')
+      .addTag('Purchase Orders', 'Bons de commande')
+      .addTag('Sales', 'Gestion des ventes')
+      .addTag('Dashboard', 'Tableau de bord')
+      .addTag('Reports', 'Rapports et statistiques')
+      .addTag('Inventory', 'Inventaire physique')
+      .addTag('Users', 'Gestion des utilisateurs')
+      .addTag('Activity Logs', 'Journaux d\'activité')
+      .build();
+
+    const document = SwaggerModule.createDocument(app, swaggerConfig);
+    SwaggerModule.setup(`${apiPrefix}/docs`, app, document, {
+      swaggerOptions: { persistAuthorization: true },
+    });
+  }
+
+  // ─── Démarrage ────────────────────────────────────────────────────────────
+  const port = configService.get<number>('PORT', 3000);
+  await app.listen(port);
+
+  console.log(`\n🚀 StockTN API démarrée sur : http://localhost:${port}/${apiPrefix}`);
+  if (configService.get<string>('NODE_ENV') !== 'production') {
+    console.log(`📚 Swagger UI          : http://localhost:${port}/${apiPrefix}/docs`);
+  }
+}
+
+bootstrap();
