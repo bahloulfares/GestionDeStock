@@ -16,6 +16,8 @@ import { DashboardModule } from './dashboard/dashboard.module';
 import { ReportsModule } from './reports/reports.module';
 import { InventoryModule } from './inventory/inventory.module';
 import { ActivityLogsModule } from './activity-logs/activity-logs.module';
+import { ReturnsModule } from './returns/returns.module';
+import { MailModule } from './mail/mail.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 
@@ -53,6 +55,8 @@ import { RolesGuard } from './common/guards/roles.guard';
     ReportsModule,
     InventoryModule,
     ActivityLogsModule,
+    ReturnsModule,
+    MailModule,
   ],
   providers: [
     // Guards globaux — appliqués sur toutes les routes

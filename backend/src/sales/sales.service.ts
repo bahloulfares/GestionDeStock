@@ -202,4 +202,60 @@ export class SalesService {
 
     return this.findOne(tenantId, id);
   }
+
+  async generateInvoicePdf(tenantId: string, id: string) {
+    const sale = await this.prisma.sale.findFirst({
+      where: { id, tenantId },
+      include: {
+        items: { include: { product: true } },
+        tenant: true,
+      }
+    });
+    if (!sale) throw new NotFoundException('Vente non trouvée');
+
+    const fonts = {
+      Helvetica: {
+        normal: 'Helvetica',
+        bold: 'Helvetica-Bold',
+        italics: 'Helvetica-Oblique',
+        bolditalics: 'Helvetica-BoldOblique'
+      }
+    };
+    
+    const pdfmake = require('pdfmake');
+    pdfmake.setFonts(fonts);
+    
+    const docDefinition = {
+      defaultStyle: { font: 'Helvetica' },
+      content: [
+        { text: sale.tenant.name, fontSize: 20, bold: true, margin: [0, 0, 0, 5] },
+        { text: 'FACTURE', fontSize: 16, bold: true, alignment: 'right', margin: [0, -25, 0, 20] },
+        
+        { text: `Réf : #${sale.id.slice(-8).toUpperCase()}`, margin: [0, 5, 0, 2] },
+        { text: `Date : ${sale.date.toLocaleDateString()}`, margin: [0, 0, 0, 2] },
+        { text: `Règlement : ${sale.paymentMethod}`, margin: [0, 0, 0, 20] },
+        
+        {
+          table: {
+            headerRows: 1,
+            widths: ['*', 'auto', 'auto', 'auto'],
+            body: [
+              [{ text: 'Désignation', bold: true }, { text: 'Qté', bold: true }, { text: 'Prix Unitaire', bold: true }, { text: 'Montant', bold: true }],
+              ...sale.items.map(item => [
+                item.product.name,
+                item.qty.toString(),
+                Number(item.priceSell).toFixed(3),
+                (item.qty * Number(item.priceSell)).toFixed(3)
+              ]),
+              [{ text: 'TOTAL (TND)', colSpan: 3, alignment: 'right', bold: true }, {}, {}, { text: Number(sale.total).toFixed(3), bold: true }]
+            ]
+          },
+          layout: 'lightHorizontalLines'
+        }
+      ]
+    };
+
+    const pdf = pdfmake.createPdf(docDefinition);
+    return pdf.getBuffer();
+  }
 }

@@ -9,7 +9,9 @@ import {
   Query,
   ParseIntPipe,
   DefaultValuePipe,
+  Res,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { PurchasesService } from './purchases.service';
 import { CreatePurchaseOrderDto } from './dto/purchase.dto';
@@ -94,5 +96,18 @@ export class PurchasesController {
     @Param('id') id: string,
   ) {
     return this.purchasesService.remove(user.tenantId, user.sub, id);
+  }
+
+  @Get(':id/pdf')
+  @ApiOperation({ summary: 'Générer le bon de commande en PDF' })
+  async getOrderPdf(
+    @CurrentUser() user: CurrentUserData,
+    @Param('id') id: string,
+    @Res() res: Response,
+  ) {
+    const buffer = await this.purchasesService.generateOrderPdf(user.tenantId, id);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="commande-${id.slice(-8)}.pdf"`);
+    res.send(buffer);
   }
 }

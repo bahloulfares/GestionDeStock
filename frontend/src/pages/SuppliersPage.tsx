@@ -64,7 +64,7 @@ export default function SuppliersPage() {
       <Card sx={{ mb: 2 }}>
         <Box sx={{ p: 2 }}>
           <TextField placeholder="Rechercher un fournisseur..." value={search} onChange={e => setSearch(e.target.value)} size="small" sx={{ minWidth: 280 }}
-            InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }} />
+            slotProps={{ input: { startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> } }} />
         </Box>
       </Card>
 
@@ -86,7 +86,7 @@ export default function SuppliersPage() {
                 <TableRow><TableCell colSpan={6} align="center" sx={{ py: 4 }}><CircularProgress size={32} /></TableCell></TableRow>
               ) : (data || []).map((s: any) => (
                 <TableRow key={s.id}>
-                  <TableCell><Typography variant="body2" fontWeight={500}>{s.name}</Typography></TableCell>
+                  <TableCell><Typography variant="body2" sx={{ fontWeight: 500 }}>{s.name}</Typography></TableCell>
                   <TableCell><Typography variant="body2">{s.phone || '—'}</Typography></TableCell>
                   <TableCell><Typography variant="body2">{s.email || '—'}</Typography></TableCell>
                   <TableCell><Typography variant="body2">{s.city || '—'}</Typography></TableCell>

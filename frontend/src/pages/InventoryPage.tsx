@@ -2,7 +2,7 @@ import { useState } from 'react';
 import {
   Box, Card, Typography, Button, Table, TableBody, TableCell, TableContainer,
   TableHead, TableRow, Chip, Dialog, DialogTitle, DialogContent, DialogActions,
-  TextField, Alert, Stack, CircularProgress, IconButton,
+  TextField, Alert, CircularProgress, IconButton,
 } from '@mui/material';
 import { Add as AddIcon, Visibility as ViewIcon } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -125,14 +125,14 @@ export default function InventoryPage() {
                   const diff = Number(item.qtyPhysical) - (product?.qty || 0);
                   return (
                     <TableRow key={item.productId}>
-                      <TableCell><Typography variant="body2" fontWeight={500}>{product?.name}</Typography></TableCell>
-                      <TableCell><Typography variant="caption" fontFamily="monospace">{product?.reference || '—'}</Typography></TableCell>
+                      <TableCell><Typography variant="body2" sx={{ fontWeight: 500 }}>{product?.name}</Typography></TableCell>
+                      <TableCell><Typography variant="caption" sx={{ fontFamily: 'monospace' }}>{product?.reference || '—'}</Typography></TableCell>
                       <TableCell align="center"><Chip label={product?.qty || 0} size="small" /></TableCell>
                       <TableCell align="center">
                         <TextField
                           type="number" value={item.qtyPhysical}
                           onChange={e => updateItem(i, 'qtyPhysical', e.target.value)}
-                          size="small" sx={{ width: 80 }} inputProps={{ min: 0 }}
+                          size="small" sx={{ width: 80 }} slotProps={{ htmlInput: { min: 0 } }}
                         />
                       </TableCell>
                       <TableCell align="center">

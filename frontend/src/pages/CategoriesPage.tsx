@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import {
-  Box, Card, CardContent, Typography, Button, Table, TableBody, TableCell, TableContainer,
+  Box, Card, Typography, Button, Table, TableBody, TableCell, TableContainer,
   TableHead, TableRow, IconButton, Dialog, DialogTitle, DialogContent, DialogActions,
-  TextField, Alert, Stack, CircularProgress,
+  TextField, Alert, CircularProgress,
 } from '@mui/material';
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -71,7 +71,7 @@ export default function CategoriesPage() {
                 <TableRow><TableCell colSpan={3} align="center" sx={{ py: 4, color: 'text.secondary' }}>Aucune catégorie</TableCell></TableRow>
               ) : (data || []).map((cat: any) => (
                 <TableRow key={cat.id}>
-                  <TableCell><Typography variant="body2" fontWeight={500}>{cat.name}</Typography></TableCell>
+                  <TableCell><Typography variant="body2" sx={{ fontWeight: 500 }}>{cat.name}</Typography></TableCell>
                   <TableCell><Typography variant="caption" color="text.secondary">{new Date(cat.createdAt).toLocaleDateString('fr-TN')}</Typography></TableCell>
                   <TableCell align="center">
                     <IconButton size="small" onClick={() => { setName(cat.name); setError(''); setDialog({ open: true, mode: 'edit', cat }); }} sx={{ mr: 0.5 }}>

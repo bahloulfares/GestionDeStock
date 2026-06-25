@@ -8,7 +8,7 @@ import {
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
-import { RegisterDto, LoginDto, RefreshTokenDto, LogoutDto } from './dto/auth.dto';
+import { RegisterDto, LoginDto, RefreshTokenDto, LogoutDto, ForgotPasswordDto, ResetPasswordDto } from './dto/auth.dto';
 import { Public } from '../common/decorators/public.decorator';
 
 @ApiTags('Auth')
@@ -17,12 +17,31 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Public()
-  @Post('register')
-  @ApiOperation({ summary: 'Inscription — Création d\'un nouveau compte boutique' })
-  @ApiResponse({ status: 201, description: 'Compte créé avec succès' })
-  @ApiResponse({ status: 409, description: 'Email déjà utilisé' })
-  register(@Body() dto: RegisterDto) {
-    return this.authService.register(dto);
+  @Post('setup')
+  @ApiOperation({ summary: 'Configuration initiale — Premier démarrage de l\'application' })
+  @ApiResponse({ status: 201, description: 'Application configurée avec succès' })
+  @ApiResponse({ status: 403, description: 'Setup déjà effectué' })
+  setup(@Body() dto: RegisterDto) {
+    return this.authService.setup(dto);
+  }
+
+  @Public()
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Mot de passe oublié — Envoi de l\'email de réinitialisation' })
+  @ApiResponse({ status: 200, description: 'Email de réinitialisation envoyé si le compte existe' })
+  forgotPassword(@Body() dto: ForgotPasswordDto) {
+    return this.authService.forgotPassword(dto);
+  }
+
+  @Public()
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Réinitialisation du mot de passe avec le token' })
+  @ApiResponse({ status: 200, description: 'Mot de passe modifié avec succès' })
+  @ApiResponse({ status: 400, description: 'Token invalide ou expiré' })
+  resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.authService.resetPassword(dto);
   }
 
   @Public()

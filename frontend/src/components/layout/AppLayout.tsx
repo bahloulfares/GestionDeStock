@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
   Box, Drawer, AppBar, Toolbar, Typography, IconButton, List, ListItem,
-  ListItemButton, ListItemIcon, ListItemText, Avatar, Menu, MenuItem,
-  Divider, Badge, Tooltip, useTheme, useMediaQuery, Chip,
+  ListItemButton, ListItemIcon, ListItemText, Avatar,
+  Badge, Tooltip, useTheme, useMediaQuery, Chip,
 } from '@mui/material';
 import {
   Dashboard as DashboardIcon,
@@ -17,9 +17,9 @@ import {
   People as UsersIcon,
   Menu as MenuIcon,
   Logout as LogoutIcon,
-  Notifications as NotifIcon,
   Store as StoreIcon,
   Warning as WarningIcon,
+  AssignmentReturn as ReturnsIcon,
 } from '@mui/icons-material';
 import { authStore } from '../../store/auth.store';
 import { authService } from '../../services';
@@ -44,7 +44,6 @@ export default function AppLayout({ onLogout }: AppLayoutProps) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const navigate = useNavigate();
   const location = useLocation();
   const user = authStore.getUser();
@@ -63,6 +62,7 @@ export default function AppLayout({ onLogout }: AppLayoutProps) {
     { label: 'Fournisseurs', path: '/suppliers', icon: <SuppliersIcon />, adminOnly: true },
     { label: 'Achats', path: '/purchases', icon: <PurchasesIcon />, adminOnly: true },
     { label: 'Ventes', path: '/sales', icon: <SalesIcon /> },
+    { label: 'Retours', path: '/returns', icon: <ReturnsIcon /> },
     { label: 'Rapports', path: '/reports', icon: <ReportsIcon />, adminOnly: true },
     { label: 'Inventaire', path: '/inventory', icon: <InventoryIcon />, adminOnly: true },
     { label: 'Utilisateurs', path: '/users', icon: <UsersIcon />, adminOnly: true },
@@ -143,12 +143,15 @@ export default function AppLayout({ onLogout }: AppLayoutProps) {
                   ) : item.icon}
                 </ListItemIcon>
                 <ListItemText
-                  primary={item.label}
-                  primaryTypographyProps={{
-                    fontSize: '0.875rem',
-                    fontWeight: isActive ? 600 : 400,
-                    color: isActive ? 'white' : 'text.primary',
-                  }}
+                  primary={
+                    <Typography sx={{
+                      fontSize: '0.875rem',
+                      fontWeight: isActive ? 600 : 400,
+                      color: isActive ? 'white' : 'text.primary',
+                    }}>
+                      {item.label}
+                    </Typography>
+                  }
                 />
               </ListItemButton>
             </ListItem>
@@ -163,7 +166,7 @@ export default function AppLayout({ onLogout }: AppLayoutProps) {
             {user?.email?.charAt(0).toUpperCase()}
           </Avatar>
           <Box sx={{ flex: 1, minWidth: 0 }}>
-            <Typography variant="body2" sx={{ fontWeight: 600, truncate: true, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <Typography variant="body2" sx={{ fontWeight: 600, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {user?.email}
             </Typography>
             <Chip

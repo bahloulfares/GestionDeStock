@@ -1,7 +1,8 @@
 import {
   Box, Typography, Grid, Card, CardContent, CircularProgress, Alert, Table,
-  TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, LinearProgress,
+  TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, LinearProgress, Button
 } from '@mui/material';
+import { Download as DownloadIcon } from '@mui/icons-material';
 import { useQuery } from '@tanstack/react-query';
 import { reportsService } from '../services';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
@@ -24,14 +25,19 @@ export default function ReportsPage() {
 
   return (
     <Box>
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="h4">Rapports</Typography>
-        <Typography variant="subtitle1">Analyses et statistiques de votre boutique</Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Box>
+          <Typography variant="h4">Rapports</Typography>
+          <Typography variant="subtitle1">Analyses et statistiques de votre boutique</Typography>
+        </Box>
+        <Button variant="outlined" startIcon={<DownloadIcon />} onClick={() => reportsService.downloadSalesExcel()}>
+          Exporter ventes (Excel)
+        </Button>
       </Box>
 
       <Grid container spacing={2.5}>
         {/* Top produits */}
-        <Grid item xs={12} lg={7}>
+        <Grid size={{ xs: 12, lg: 7 }}>
           <Card>
             <CardContent>
               <Typography variant="h6" sx={{ mb: 2 }}>🏆 Top produits vendus</Typography>
@@ -55,7 +61,7 @@ export default function ReportsPage() {
         </Grid>
 
         {/* Valeur stock */}
-        <Grid item xs={12} lg={5}>
+        <Grid size={{ xs: 12, lg: 5 }}>
           <Card sx={{ height: '100%' }}>
             <CardContent>
               <Typography variant="h6" sx={{ mb: 2 }}>📦 Valeur du stock</Typography>
@@ -63,7 +69,7 @@ export default function ReportsPage() {
                 <Box>
                   <Box sx={{ mb: 2, p: 2, bgcolor: 'primary.50', borderRadius: 2, border: '1px solid', borderColor: 'primary.100' }}>
                     <Typography variant="caption" color="text.secondary">Valeur totale estimée</Typography>
-                    <Typography variant="h5" fontWeight={800} color="primary.main">
+                    <Typography variant="h5" sx={{ fontWeight: 800 }} color="primary.main">
                       {Number(stockValue?.totalValue || 0).toFixed(3)} TND
                     </Typography>
                   </Box>
@@ -71,7 +77,7 @@ export default function ReportsPage() {
                     {(stockValue?.byCategory || []).map((cat: any) => (
                       <Box key={cat.categoryName} sx={{ mb: 1.5 }}>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                          <Typography variant="body2" fontWeight={500}>{cat.categoryName}</Typography>
+                          <Typography variant="body2" sx={{ fontWeight: 500 }}>{cat.categoryName}</Typography>
                           <Typography variant="body2">{Number(cat.value).toFixed(3)} TND</Typography>
                         </Box>
                         <LinearProgress
@@ -89,7 +95,7 @@ export default function ReportsPage() {
         </Grid>
 
         {/* Ventes 30 derniers jours */}
-        <Grid item xs={12}>
+        <Grid size={12}>
           <Card>
             <CardContent>
               <Typography variant="h6" sx={{ mb: 2 }}>📈 Évolution des ventes (30 derniers jours)</Typography>
@@ -111,7 +117,7 @@ export default function ReportsPage() {
         </Grid>
 
         {/* Alertes stock */}
-        <Grid item xs={12}>
+        <Grid size={12}>
           <Card>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
@@ -134,8 +140,8 @@ export default function ReportsPage() {
                     <TableBody>
                       {(alerts || []).map((p: any) => (
                         <TableRow key={p.id}>
-                          <TableCell><Typography variant="body2" fontWeight={500}>{p.name}</Typography></TableCell>
-                          <TableCell><Typography variant="caption" fontFamily="monospace">{p.reference || '—'}</Typography></TableCell>
+                          <TableCell><Typography variant="body2" sx={{ fontWeight: 500 }}>{p.name}</Typography></TableCell>
+                          <TableCell><Typography variant="caption" sx={{ fontFamily: 'monospace' }}>{p.reference || '—'}</Typography></TableCell>
                           <TableCell><Chip label={p.categoryName || '—'} size="small" variant="outlined" /></TableCell>
                           <TableCell align="center"><Chip label={p.qty} size="small" color={p.qty === 0 ? 'error' : 'warning'} /></TableCell>
                           <TableCell align="center"><Typography variant="body2">{p.minStock}</Typography></TableCell>

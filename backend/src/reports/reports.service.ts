@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class ReportsService {
@@ -54,12 +55,9 @@ export class ReportsService {
     const end = endDate ? new Date(endDate) : new Date();
 
     // Choisir le format de troncature selon groupBy
-    const truncFn =
-      groupBy === 'month'
-        ? 'month'
-        : groupBy === 'week'
-        ? 'week'
-        : 'day';
+    const truncFn = Prisma.raw(
+      groupBy === 'month' ? "'month'" : groupBy === 'week' ? "'week'" : "'day'"
+    );
 
     const results = await this.prisma.$queryRaw<any[]>`
       SELECT
@@ -176,5 +174,48 @@ export class ReportsService {
         missingQty: p.minStock - p.qty,
         categoryName: p.category?.name ?? null,
       }));
+  }
+
+  // ─── GET /api/reports/sales/export ──────────────────────────────────────────
+  async exportSalesExcel(tenantId: string, startDate?: string, endDate?: string) {
+    const start = startDate ? new Date(startDate) : new Date('2000-01-01');
+    const end = endDate ? new Date(endDate) : new Date();
+
+    const sales = await this.prisma.sale.findMany({
+      where: { tenantId, date: { gte: start, lte: end } },
+      include: {
+        createdByUser: { select: { email: true } },
+        items: { include: { product: { select: { name: true } } } }
+      },
+      orderBy: { date: 'asc' }
+    });
+
+    const ExcelJS = require('exceljs');
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet('Ventes');
+    
+    sheet.columns = [
+      { header: 'ID', key: 'id', width: 36 },
+      { header: 'Date', key: 'date', width: 25 },
+      { header: 'Total (TND)', key: 'total', width: 15 },
+      { header: 'Paiement', key: 'payment', width: 15 },
+      { header: 'Statut', key: 'status', width: 15 },
+      { header: 'Vendeur', key: 'seller', width: 25 },
+      { header: 'Articles', key: 'items', width: 50 },
+    ];
+
+    for (const s of sales) {
+      sheet.addRow({
+        id: s.id,
+        date: s.date.toISOString(),
+        total: Number(s.total),
+        payment: s.paymentMethod,
+        status: s.status,
+        seller: s.createdByUser.email,
+        items: s.items.map(i => `${i.qty}x ${i.product.name}`).join(', ')
+      });
+    }
+
+    return await workbook.xlsx.writeBuffer();
   }
 }

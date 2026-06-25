@@ -7,7 +7,7 @@ import {
 } from '@mui/material';
 import {
   Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon,
-  Search as SearchIcon, Warning as WarningIcon, FilterList as FilterIcon,
+  Search as SearchIcon, Warning as WarningIcon,
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { productsService, categoriesService } from '../services';
@@ -101,13 +101,13 @@ export default function ProductsPage() {
       {/* Filtres */}
       <Card sx={{ mb: 2 }}>
         <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} alignItems="center">
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ alignItems: 'center' }}>
             <TextField
               placeholder="Rechercher un produit..."
               value={search}
               onChange={e => { setSearch(e.target.value); setPage(1); }}
               size="small" sx={{ minWidth: 250 }}
-              InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }}
+              slotProps={{ input: { startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> } }}
             />
             <FormControl size="small" sx={{ minWidth: 160 }}>
               <InputLabel>Catégorie</InputLabel>
@@ -155,13 +155,13 @@ export default function ProductsPage() {
                     <TableCell>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         {isLow && <Tooltip title="Stock critique"><WarningIcon sx={{ fontSize: 16, color: 'warning.main' }} /></Tooltip>}
-                        <Typography variant="body2" fontWeight={500}>{p.name}</Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 500 }}>{p.name}</Typography>
                       </Box>
                     </TableCell>
                     <TableCell><Typography variant="caption" sx={{ fontFamily: 'monospace', bgcolor: 'grey.100', px: 1, py: 0.25, borderRadius: 1 }}>{p.reference || '—'}</Typography></TableCell>
                     <TableCell><Chip label={p.categoryName || '—'} size="small" variant="outlined" /></TableCell>
                     <TableCell align="right"><Typography variant="body2">{Number(p.priceBuy).toFixed(3)}</Typography></TableCell>
-                    <TableCell align="right"><Typography variant="body2" fontWeight={600}>{Number(p.priceSell).toFixed(3)}</Typography></TableCell>
+                    <TableCell align="right"><Typography variant="body2" sx={{ fontWeight: 600 }}>{Number(p.priceSell).toFixed(3)}</Typography></TableCell>
                     <TableCell align="center">
                       <Chip
                         label={p.qty}
@@ -205,12 +205,12 @@ export default function ProductsPage() {
               </Select>
             </FormControl>
             <Stack direction="row" spacing={2}>
-              <TextField label="Prix achat (TND) *" type="number" value={form.priceBuy} onChange={e => setForm(p => ({ ...p, priceBuy: e.target.value }))} fullWidth inputProps={{ step: '0.001', min: 0 }} />
-              <TextField label="Prix vente (TND) *" type="number" value={form.priceSell} onChange={e => setForm(p => ({ ...p, priceSell: e.target.value }))} fullWidth inputProps={{ step: '0.001', min: 0 }} />
+              <TextField label="Prix achat (TND) *" type="number" value={form.priceBuy} onChange={e => setForm(p => ({ ...p, priceBuy: e.target.value }))} fullWidth slotProps={{ htmlInput: { step: '0.001', min: 0 } }} />
+              <TextField label="Prix vente (TND) *" type="number" value={form.priceSell} onChange={e => setForm(p => ({ ...p, priceSell: e.target.value }))} fullWidth slotProps={{ htmlInput: { step: '0.001', min: 0 } }} />
             </Stack>
             <Stack direction="row" spacing={2}>
-              <TextField label="Quantité *" type="number" value={form.qty} onChange={e => setForm(p => ({ ...p, qty: e.target.value }))} fullWidth inputProps={{ min: 0 }} />
-              <TextField label="Stock minimum" type="number" value={form.minStock} onChange={e => setForm(p => ({ ...p, minStock: e.target.value }))} fullWidth inputProps={{ min: 0 }} />
+              <TextField label="Quantité *" type="number" value={form.qty} onChange={e => setForm(p => ({ ...p, qty: e.target.value }))} fullWidth slotProps={{ htmlInput: { min: 0 } }} />
+              <TextField label="Stock minimum" type="number" value={form.minStock} onChange={e => setForm(p => ({ ...p, minStock: e.target.value }))} fullWidth slotProps={{ htmlInput: { min: 0 } }} />
             </Stack>
           </Stack>
         </DialogContent>

@@ -89,7 +89,7 @@ export default function DashboardPage() {
 
       {/* KPI Cards */}
       <Grid container spacing={2.5} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={6} lg={4}>
+        <Grid size={{ xs: 12, sm: 6, lg: 4 }}>
           <KpiCard
             title="CA Aujourd'hui"
             value={formatCurrency(data?.todayRevenue)}
@@ -98,7 +98,7 @@ export default function DashboardPage() {
             trend="Ventes du jour"
           />
         </Grid>
-        <Grid item xs={12} sm={6} lg={4}>
+        <Grid size={{ xs: 12, sm: 6, lg: 4 }}>
           <KpiCard
             title="CA du mois"
             value={formatCurrency(data?.monthRevenue)}
@@ -107,7 +107,7 @@ export default function DashboardPage() {
             trend="Mois en cours"
           />
         </Grid>
-        <Grid item xs={12} sm={6} lg={4}>
+        <Grid size={{ xs: 12, sm: 6, lg: 4 }}>
           <KpiCard
             title="Valeur du stock"
             value={formatCurrency(data?.stockValue)}
@@ -116,7 +116,7 @@ export default function DashboardPage() {
             subtitle="Prix d'achat"
           />
         </Grid>
-        <Grid item xs={12} sm={6} lg={4}>
+        <Grid size={{ xs: 12, sm: 6, lg: 4 }}>
           <KpiCard
             title="Produits actifs"
             value={data?.totalProducts || 0}
@@ -125,7 +125,7 @@ export default function DashboardPage() {
             subtitle="Références en catalogue"
           />
         </Grid>
-        <Grid item xs={12} sm={6} lg={4}>
+        <Grid size={{ xs: 12, sm: 6, lg: 4 }}>
           <KpiCard
             title="Stocks critiques"
             value={data?.lowStockCount || 0}
@@ -138,7 +138,7 @@ export default function DashboardPage() {
 
       <Grid container spacing={2.5}>
         {/* Ventes récentes */}
-        <Grid item xs={12} lg={7}>
+        <Grid size={{ xs: 12, lg: 7 }}>
           <Card>
             <CardContent sx={{ p: 2.5 }}>
               <Typography variant="h6" sx={{ mb: 2 }}>Ventes récentes</Typography>
@@ -159,10 +159,10 @@ export default function DashboardPage() {
                         <ListItemText
                           primary={
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <Typography variant="body2" fontWeight={600}>
+                              <Typography variant="body2" sx={{ fontWeight: 600 }}>
                                 Vente #{sale.id.slice(-6).toUpperCase()}
                               </Typography>
-                              <Typography variant="body2" fontWeight={700} color="success.main">
+                              <Typography variant="body2" color="success.main" sx={{ fontWeight: 700 }}>
                                 {formatCurrency(sale.total)}
                               </Typography>
                             </Box>
@@ -189,7 +189,7 @@ export default function DashboardPage() {
         </Grid>
 
         {/* Alertes stock */}
-        <Grid item xs={12} lg={5}>
+        <Grid size={{ xs: 12, lg: 5 }}>
           <Card>
             <CardContent sx={{ p: 2.5 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
@@ -201,7 +201,7 @@ export default function DashboardPage() {
               </Box>
               {data?.lowStockAlerts?.length === 0 ? (
                 <Box sx={{ textAlign: 'center', py: 4 }}>
-                  <Typography variant="body2" color="success.main" fontWeight={600}>
+                  <Typography variant="body2" color="success.main" sx={{ fontWeight: 600 }}>
                     ✅ Tous les stocks sont suffisants
                   </Typography>
                 </Box>
@@ -212,7 +212,7 @@ export default function DashboardPage() {
                     return (
                       <Box key={product.id} sx={{ mb: 2 }}>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                          <Typography variant="body2" fontWeight={500} sx={{ fontSize: '0.8rem' }}>
+                          <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.8rem' }}>
                             {product.name}
                           </Typography>
                           <Chip

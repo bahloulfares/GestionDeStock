@@ -4,7 +4,9 @@ import {
   Query,
   ParseIntPipe,
   DefaultValuePipe,
+  Res,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { ReportsService } from './reports.service';
 import { CurrentUser, CurrentUserData } from '../common/decorators/current-user.decorator';
@@ -65,5 +67,28 @@ export class ReportsController {
   @ApiOperation({ summary: 'Produits sous le seuil minimum (ADMIN)' })
   getStockAlerts(@CurrentUser() user: CurrentUserData) {
     return this.reportsService.getStockAlerts(user.tenantId);
+  }
+
+  @Get('sales/export')
+  @ApiOperation({ summary: 'Exporter les ventes en Excel (ADMIN)' })
+  @ApiQuery({ name: 'startDate', required: false })
+  @ApiQuery({ name: 'endDate', required: false })
+  async exportSales(
+    @CurrentUser() user: CurrentUserData,
+    @Res() res: Response,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    const buffer = await this.reportsService.exportSalesExcel(
+      user.tenantId,
+      startDate,
+      endDate,
+    );
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    );
+    res.setHeader('Content-Disposition', 'attachment; filename="ventes.xlsx"');
+    res.send(buffer);
   }
 }

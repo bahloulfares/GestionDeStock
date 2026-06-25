@@ -7,7 +7,9 @@ import {
   Query,
   ParseIntPipe,
   DefaultValuePipe,
+  Res,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { SalesService } from './sales.service';
 import { CreateSaleDto, CancelSaleDto } from './dto/sale.dto';
@@ -75,5 +77,18 @@ export class SalesController {
     @Body() dto: CancelSaleDto,
   ) {
     return this.salesService.cancel(user.tenantId, user.sub, id, dto);
+  }
+
+  @Get(':id/invoice')
+  @ApiOperation({ summary: 'Générer la facture PDF' })
+  async getInvoicePdf(
+    @CurrentUser() user: CurrentUserData,
+    @Param('id') id: string,
+    @Res() res: Response,
+  ) {
+    const buffer = await this.salesService.generateInvoicePdf(user.tenantId, id);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="facture-${id.slice(-8)}.pdf"`);
+    res.send(buffer);
   }
 }

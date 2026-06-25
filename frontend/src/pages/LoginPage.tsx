@@ -93,8 +93,10 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 sx={{ mb: 2 }}
-                InputProps={{
-                  startAdornment: <InputAdornment position="start"><EmailIcon sx={{ color: 'text.secondary', fontSize: 20 }} /></InputAdornment>
+                slotProps={{
+                  input: {
+                    startAdornment: <InputAdornment position="start"><EmailIcon sx={{ color: 'text.secondary', fontSize: 20 }} /></InputAdornment>
+                  }
                 }}
               />
               <TextField
@@ -105,15 +107,17 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 sx={{ mb: 3 }}
-                InputProps={{
-                  startAdornment: <InputAdornment position="start"><LockIcon sx={{ color: 'text.secondary', fontSize: 20 }} /></InputAdornment>,
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton onClick={() => setShowPassword(!showPassword)} edge="end" size="small">
-                        {showPassword ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
-                      </IconButton>
-                    </InputAdornment>
-                  ),
+                slotProps={{
+                  input: {
+                    startAdornment: <InputAdornment position="start"><LockIcon sx={{ color: 'text.secondary', fontSize: 20 }} /></InputAdornment>,
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton onClick={() => setShowPassword(!showPassword)} edge="end" size="small">
+                          {showPassword ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  }
                 }}
               />
               <Button
@@ -148,13 +152,15 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
               </Typography>
             </Box>
 
-            <Box sx={{ mt: 3, textAlign: 'center' }}>
-              <Typography variant="body2" color="text.secondary">
-                Pas encore de compte ?{' '}
-                <Link to="/register" style={{ color: '#1A56DB', fontWeight: 600, textDecoration: 'none' }}>
-                  S'inscrire
+            <Box sx={{ mt: 3, textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+              <Link to="/forgot-password" style={{ color: '#1A56DB', fontWeight: 600, fontSize: '0.875rem', textDecoration: 'none' }}>
+                Mot de passe oublié ?
+              </Link>
+              <Box sx={{ mt: 1 }}>
+                <Link to="/setup" style={{ color: '#7E3AF2', fontWeight: 500, fontSize: '0.75rem', textDecoration: 'none', opacity: 0.8 }}>
+                  ⚙️ Premier démarrage (Configuration initiale)
                 </Link>
-              </Typography>
+              </Box>
             </Box>
           </CardContent>
         </Card>

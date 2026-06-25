@@ -253,4 +253,63 @@ export class PurchasesService {
 
     return { message: 'Bon de commande supprimé avec succès' };
   }
+
+  async generateOrderPdf(tenantId: string, id: string) {
+    const order = await this.prisma.purchaseOrder.findFirst({
+      where: { id, tenantId },
+      include: {
+        items: { include: { product: true } },
+        supplier: true,
+        tenant: true,
+      }
+    });
+    if (!order) throw new NotFoundException('Bon de commande non trouvé');
+
+    const fonts = {
+      Helvetica: {
+        normal: 'Helvetica',
+        bold: 'Helvetica-Bold',
+        italics: 'Helvetica-Oblique',
+        bolditalics: 'Helvetica-BoldOblique'
+      }
+    };
+    
+    const pdfmake = require('pdfmake');
+    pdfmake.setFonts(fonts);
+    
+    const total = order.items.reduce((acc, item) => acc + (item.qty * Number(item.priceBuy)), 0);
+
+    const docDefinition = {
+      defaultStyle: { font: 'Helvetica' },
+      content: [
+        { text: order.tenant.name, fontSize: 20, bold: true, margin: [0, 0, 0, 5] },
+        { text: 'BON DE COMMANDE', fontSize: 16, bold: true, alignment: 'right', margin: [0, -25, 0, 20] },
+        
+        { text: `Fournisseur : ${order.supplier.name}`, margin: [0, 5, 0, 2] },
+        { text: `Réf : #${order.id.slice(-8).toUpperCase()}`, margin: [0, 5, 0, 2] },
+        { text: `Date : ${order.date.toLocaleDateString()}`, margin: [0, 0, 0, 20] },
+        
+        {
+          table: {
+            headerRows: 1,
+            widths: ['*', 'auto', 'auto', 'auto'],
+            body: [
+              [{ text: 'Désignation', bold: true }, { text: 'Qté', bold: true }, { text: 'Prix Unitaire', bold: true }, { text: 'Montant', bold: true }],
+              ...order.items.map(item => [
+                item.product.name,
+                item.qty.toString(),
+                Number(item.priceBuy).toFixed(3),
+                (item.qty * Number(item.priceBuy)).toFixed(3)
+              ]),
+              [{ text: 'TOTAL ESTIMÉ (TND)', colSpan: 3, alignment: 'right', bold: true }, {}, {}, { text: total.toFixed(3), bold: true }]
+            ]
+          },
+          layout: 'lightHorizontalLines'
+        }
+      ]
+    };
+
+    const pdf = pdfmake.createPdf(docDefinition);
+    return pdf.getBuffer();
+  }
 }

@@ -59,3 +59,27 @@ export class LogoutDto {
   @IsString()
   refreshToken: string;
 }
+
+export class ForgotPasswordDto {
+  @ApiProperty({ example: 'admin@maboutique.tn' })
+  @IsEmail({}, { message: 'Email invalide' })
+  email: string;
+}
+
+export class ResetPasswordDto {
+  @ApiProperty({ example: 'token_generated_by_system' })
+  @IsString()
+  token: string;
+
+  @ApiProperty({
+    example: 'NewAdmin@2026!',
+    description: 'Min 8 caractères, 1 majuscule, 1 chiffre, 1 caractère spécial',
+  })
+  @IsString()
+  @MinLength(8)
+  @MaxLength(50)
+  @Matches(/^(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*])/, {
+    message: 'Le mot de passe doit contenir au moins 1 majuscule, 1 chiffre et 1 caractère spécial',
+  })
+  password: string;
+}

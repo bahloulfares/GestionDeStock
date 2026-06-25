@@ -3,11 +3,11 @@ import {
   Box, Card, Typography, Button, Table, TableBody, TableCell, TableContainer,
   TableHead, TableRow, Chip, Dialog, DialogTitle, DialogContent, DialogActions,
   TextField, Alert, Stack, CircularProgress, FormControl, InputLabel, Select,
-  MenuItem, Pagination, IconButton,
+  MenuItem, Pagination, IconButton, Switch, FormControlLabel
 } from '@mui/material';
-import { Add as AddIcon, Visibility as ViewIcon, Cancel as CancelIcon } from '@mui/icons-material';
+import { Add as AddIcon, Visibility as ViewIcon, Cancel as CancelIcon, PictureAsPdf as PdfIcon, AssignmentReturn as ReturnIcon } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { salesService, productsService } from '../services';
+import { salesService, productsService, returnsService } from '../services';
 import { authStore } from '../store/auth.store';
 import dayjs from 'dayjs';
 
@@ -22,8 +22,12 @@ export default function SalesPage() {
   const [createDialog, setCreateDialog] = useState(false);
   const [viewDialog, setViewDialog] = useState<{ open: boolean; sale?: any }>({ open: false });
   const [cancelDialog, setCancelDialog] = useState<{ open: boolean; saleId?: string }>({ open: false });
+  const [returnDialog, setReturnDialog] = useState<{ open: boolean; sale?: any }>({ open: false });
   const [cancelReason, setCancelReason] = useState('');
   const [form, setForm] = useState({ paymentMethod: 'CASH', notes: '', items: [{ productId: '', qty: '1', priceSell: '' }] });
+  
+  // Return form state
+  const [returnForm, setReturnForm] = useState<{ notes: string, items: any[] }>({ notes: '', items: [] });
   const [error, setError] = useState('');
 
   const { data, isLoading } = useQuery({
@@ -44,6 +48,12 @@ export default function SalesPage() {
     mutationFn: ({ id, reason }: any) => salesService.cancel(id, reason),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['sales'] }); qc.invalidateQueries({ queryKey: ['products'] }); setCancelDialog({ open: false }); setCancelReason(''); },
     onError: (e: any) => alert(e.response?.data?.message || 'Erreur'),
+  });
+
+  const returnMutation = useMutation({
+    mutationFn: returnsService.create,
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['returns'] }); setReturnDialog({ open: false }); },
+    onError: (e: any) => setError(e.response?.data?.message || 'Erreur'),
   });
 
   const resetForm = () => { setForm({ paymentMethod: 'CASH', notes: '', items: [{ productId: '', qty: '1', priceSell: '' }] }); setError(''); };
@@ -69,6 +79,43 @@ export default function SalesPage() {
       items: form.items.map(i => ({ productId: i.productId, qty: Number(i.qty), priceSell: Number(i.priceSell) })),
     };
     createMutation.mutate(payload);
+  };
+
+  const openReturnDialog = async (saleId: string) => {
+    const d = await salesService.getOne(saleId);
+    setReturnForm({
+      notes: '',
+      items: d.items.map((i: any) => ({
+        selected: false,
+        productId: i.productId,
+        productName: i.product?.name,
+        maxQty: i.qty,
+        qty: 1,
+        reason: 'REFUND',
+        returnToStock: true,
+      }))
+    });
+    setReturnDialog({ open: true, sale: d });
+    setError('');
+  };
+
+  const handleCreateReturn = () => {
+    const selectedItems = returnForm.items.filter(i => i.selected);
+    if (selectedItems.length === 0) {
+      setError('Sélectionnez au moins un article à retourner');
+      return;
+    }
+    const payload = {
+      saleId: returnDialog.sale.id,
+      notes: returnForm.notes || undefined,
+      items: selectedItems.map(i => ({
+        productId: i.productId,
+        qty: Number(i.qty),
+        reason: i.reason,
+        returnToStock: i.returnToStock,
+      }))
+    };
+    returnMutation.mutate(payload);
   };
 
   const totalSell = form.items.reduce((acc, i) => acc + (Number(i.qty) || 0) * (Number(i.priceSell) || 0), 0);
@@ -115,13 +162,16 @@ export default function SalesPage() {
                 <TableRow><TableCell colSpan={6} align="center" sx={{ py: 4 }}><CircularProgress size={32} /></TableCell></TableRow>
               ) : data?.data?.map((s: any) => (
                 <TableRow key={s.id}>
-                  <TableCell><Typography variant="caption" fontFamily="monospace" sx={{ bgcolor: 'grey.100', px: 1, py: 0.25, borderRadius: 1 }}>#{s.id.slice(-8).toUpperCase()}</Typography></TableCell>
+                  <TableCell><Typography variant="caption" sx={{ fontFamily: 'monospace', bgcolor: 'grey.100', px: 1, py: 0.25, borderRadius: 1 }}>#{s.id.slice(-8).toUpperCase()}</Typography></TableCell>
                   <TableCell><Typography variant="body2">{dayjs(s.date).format('DD/MM/YYYY HH:mm')}</Typography></TableCell>
-                  <TableCell align="right"><Typography variant="body2" fontWeight={700} color="success.main">{Number(s.total).toFixed(3)} TND</Typography></TableCell>
+                  <TableCell align="right"><Typography variant="body2" sx={{ fontWeight: 700 }} color="success.main">{Number(s.total).toFixed(3)} TND</Typography></TableCell>
                   <TableCell><Chip label={PAYMENT_LABELS[s.paymentMethod] || s.paymentMethod} size="small" variant="outlined" /></TableCell>
                   <TableCell><Chip label={s.status === 'COMPLETED' ? 'Complétée' : 'Annulée'} size="small" color={STATUS_COLORS[s.status]} /></TableCell>
                   <TableCell align="center">
                     <IconButton size="small" onClick={async () => { const d = await salesService.getOne(s.id); setViewDialog({ open: true, sale: d }); }} sx={{ mr: 0.5 }}><ViewIcon fontSize="small" /></IconButton>
+                    {s.status === 'COMPLETED' && (
+                      <IconButton size="small" color="primary" onClick={() => openReturnDialog(s.id)} sx={{ mr: 0.5 }}><ReturnIcon fontSize="small" /></IconButton>
+                    )}
                     {isAdmin && s.status === 'COMPLETED' && (
                       <IconButton size="small" color="error" onClick={() => { setCancelDialog({ open: true, saleId: s.id }); setCancelReason(''); }}><CancelIcon fontSize="small" /></IconButton>
                     )}
@@ -156,9 +206,9 @@ export default function SalesPage() {
               <TextField label="Notes" value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} fullWidth />
             </Stack>
 
-            <Typography variant="subtitle2" fontWeight={600}>Articles</Typography>
+            <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>Articles</Typography>
             {form.items.map((item, i) => (
-              <Stack key={i} direction="row" spacing={1} alignItems="center">
+              <Stack key={i} direction="row" spacing={1} sx={{ alignItems: 'center' }}>
                 <FormControl sx={{ flex: 2 }}>
                   <InputLabel>Produit *</InputLabel>
                   <Select value={item.productId} label="Produit *" onChange={e => updateItem(i, 'productId', e.target.value)} size="small">
@@ -169,14 +219,14 @@ export default function SalesPage() {
                     ))}
                   </Select>
                 </FormControl>
-                <TextField label="Qté *" type="number" value={item.qty} onChange={e => updateItem(i, 'qty', e.target.value)} size="small" sx={{ width: 80 }} inputProps={{ min: 1 }} />
-                <TextField label="Prix TND *" type="number" value={item.priceSell} onChange={e => updateItem(i, 'priceSell', e.target.value)} size="small" sx={{ width: 110 }} inputProps={{ step: '0.001', min: 0 }} />
+                <TextField label="Qté *" type="number" value={item.qty} onChange={e => updateItem(i, 'qty', e.target.value)} size="small" sx={{ width: 80 }} slotProps={{ htmlInput: { min: 1 } }} />
+                <TextField label="Prix TND *" type="number" value={item.priceSell} onChange={e => updateItem(i, 'priceSell', e.target.value)} size="small" sx={{ width: 110 }} slotProps={{ htmlInput: { step: '0.001', min: 0 } }} />
                 <IconButton size="small" color="error" onClick={() => removeItem(i)} disabled={form.items.length === 1}><CancelIcon fontSize="small" /></IconButton>
               </Stack>
             ))}
-            <Stack direction="row" justifyContent="space-between" alignItems="center">
+            <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center' }}>
               <Button onClick={addItem} variant="outlined" size="small" startIcon={<AddIcon />}>Ajouter un article</Button>
-              <Typography variant="h6" fontWeight={700} color="success.main">
+              <Typography variant="h6" sx={{ fontWeight: 700 }} color="success.main">
                 Total : {totalSell.toFixed(3)} TND
               </Typography>
             </Stack>
@@ -207,10 +257,10 @@ export default function SalesPage() {
                 <TableBody>
                   {viewDialog.sale.items?.map((item: any) => (
                     <TableRow key={item.id}>
-                      <TableCell>{item.product?.name}</TableCell>
+                      <TableCell><Typography variant="body2" sx={{ fontWeight: 500 }}>{item.productName || item.product?.name}</Typography></TableCell>
                       <TableCell align="center">{item.qty}</TableCell>
-                      <TableCell align="right">{Number(item.priceSell).toFixed(3)}</TableCell>
-                      <TableCell align="right" fontWeight={600}>{(item.qty * Number(item.priceSell)).toFixed(3)}</TableCell>
+                      <TableCell align="right">{Number(item.priceSell).toFixed(3)} TND</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 600, color: 'success.dark' }}>{(item.qty * Number(item.priceSell)).toFixed(3)} TND</TableCell>
                     </TableRow>
                   ))}
                   <TableRow><TableCell colSpan={3} align="right" sx={{ fontWeight: 700 }}>Total</TableCell><TableCell align="right" sx={{ fontWeight: 700, color: 'success.main' }}>{Number(viewDialog.sale.total).toFixed(3)} TND</TableCell></TableRow>
@@ -219,8 +269,87 @@ export default function SalesPage() {
             </Box>
           )}
         </DialogContent>
-        <DialogActions sx={{ p: 2 }}>
+        <DialogActions sx={{ p: 2, justifyContent: 'space-between' }}>
+          <Button startIcon={<PdfIcon />} onClick={() => salesService.downloadInvoicePdf(viewDialog.sale.id)} variant="outlined">
+            Facture PDF
+          </Button>
           <Button onClick={() => setViewDialog({ open: false })}>Fermer</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Return Dialog */}
+      <Dialog open={returnDialog.open} onClose={() => setReturnDialog({ open: false })} maxWidth="md" fullWidth>
+        <DialogTitle>Initier un retour client</DialogTitle>
+        <DialogContent>
+          {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+          <Typography variant="body2" sx={{ mb: 2 }}>Vente Réf : #{returnDialog.sale?.id.slice(-8).toUpperCase()}</Typography>
+          <TextField label="Notes sur le retour (optionnel)" value={returnForm.notes} onChange={e => setReturnForm(p => ({ ...p, notes: e.target.value }))} fullWidth sx={{ mb: 2 }} />
+          
+          <TableContainer>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Retourner ?</TableCell>
+                  <TableCell>Produit</TableCell>
+                  <TableCell align="center">Qté retournée</TableCell>
+                  <TableCell>Motif</TableCell>
+                  <TableCell align="center">Remettre en stock ?</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {returnForm.items.map((item, i) => (
+                  <TableRow key={i}>
+                    <TableCell>
+                      <Switch size="small" checked={item.selected} onChange={e => {
+                        const newItems = [...returnForm.items];
+                        newItems[i].selected = e.target.checked;
+                        setReturnForm(p => ({ ...p, items: newItems }));
+                      }} />
+                    </TableCell>
+                    <TableCell><Typography variant="body2" color={item.selected ? 'text.primary' : 'text.disabled'}>{item.productName}</Typography></TableCell>
+                    <TableCell align="center">
+                      <TextField type="number" size="small" disabled={!item.selected} value={item.qty} onChange={e => {
+                        const newItems = [...returnForm.items];
+                        newItems[i].qty = Number(e.target.value);
+                        setReturnForm(p => ({ ...p, items: newItems }));
+                      }} sx={{ width: 70 }} slotProps={{ htmlInput: { min: 1, max: item.maxQty } }} />
+                      <Typography variant="caption" sx={{ display: 'block' }}>Max: {item.maxQty}</Typography>
+                    </TableCell>
+                    <TableCell>
+                      <FormControl size="small" disabled={!item.selected} sx={{ minWidth: 140 }}>
+                        <Select value={item.reason} onChange={e => {
+                          const newItems = [...returnForm.items];
+                          newItems[i].reason = e.target.value;
+                          if (e.target.value === 'BROKEN') newItems[i].returnToStock = false;
+                          else newItems[i].returnToStock = true;
+                          setReturnForm(p => ({ ...p, items: newItems }));
+                        }}>
+                          <MenuItem value="REFUND">Remboursement</MenuItem>
+                          <MenuItem value="WRONG_ITEM">Erreur d'article</MenuItem>
+                          <MenuItem value="BROKEN">Défectueux/Cassé</MenuItem>
+                        </Select>
+                      </FormControl>
+                    </TableCell>
+                    <TableCell align="center">
+                      <FormControlLabel control={
+                        <Switch size="small" checked={item.returnToStock} disabled={!item.selected || item.reason === 'BROKEN'} onChange={e => {
+                          const newItems = [...returnForm.items];
+                          newItems[i].returnToStock = e.target.checked;
+                          setReturnForm(p => ({ ...p, items: newItems }));
+                        }} />
+                      } label={item.returnToStock ? 'Oui' : 'Non'} />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </DialogContent>
+        <DialogActions sx={{ p: 2.5 }}>
+          <Button onClick={() => setReturnDialog({ open: false })}>Annuler</Button>
+          <Button variant="contained" onClick={handleCreateReturn} disabled={returnMutation.isPending} color="primary">
+            Soumettre le retour
+          </Button>
         </DialogActions>
       </Dialog>
 

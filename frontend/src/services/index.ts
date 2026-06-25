@@ -5,8 +5,14 @@ export const authService = {
   login: (email: string, password: string) =>
     api.post('/auth/login', { email, password }).then(r => r.data),
 
-  register: (shopName: string, email: string, password: string, phone?: string) =>
-    api.post('/auth/register', { shopName, email, password, phone }).then(r => r.data),
+  setup: (shopName: string, email: string, password: string, phone?: string) =>
+    api.post('/auth/setup', { shopName, email, password, phone }).then(r => r.data),
+
+  forgotPassword: (email: string) =>
+    api.post('/auth/forgot-password', { email }).then(r => r.data),
+
+  resetPassword: (password: string, token: string) =>
+    api.post('/auth/reset-password', { password, token }).then(r => r.data),
 
   logout: (refreshToken: string) =>
     api.post('/auth/logout', { refreshToken }),
@@ -50,6 +56,16 @@ export const purchasesService = {
   validate: (id: string) => api.put(`/purchase-orders/${id}/validate`).then(r => r.data),
   cancel: (id: string) => api.put(`/purchase-orders/${id}/cancel`).then(r => r.data),
   remove: (id: string) => api.delete(`/purchase-orders/${id}`).then(r => r.data),
+  downloadOrderPdf: async (id: string) => {
+    const response = await api.get(`/purchase-orders/${id}/pdf`, { responseType: 'blob' });
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `commande-${id.slice(-8)}.pdf`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  },
 };
 
 // ─── Sales ─────────────────────────────────────────────────────────────────
@@ -58,6 +74,25 @@ export const salesService = {
   getOne: (id: string) => api.get(`/sales/${id}`).then(r => r.data),
   create: (data: any) => api.post('/sales', data).then(r => r.data),
   cancel: (id: string, reason: string) => api.post(`/sales/${id}/cancel`, { reason }).then(r => r.data),
+  downloadInvoicePdf: async (id: string) => {
+    const response = await api.get(`/sales/${id}/invoice`, { responseType: 'blob' });
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `facture-${id.slice(-8)}.pdf`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  },
+};
+
+// ─── Returns ───────────────────────────────────────────────────────────────
+export const returnsService = {
+  getAll: (params?: Record<string, any>) => api.get('/returns', { params }).then(r => r.data),
+  getOne: (id: string) => api.get(`/returns/${id}`).then(r => r.data),
+  create: (data: any) => api.post('/returns', data).then(r => r.data),
+  validate: (id: string) => api.put(`/returns/${id}/validate`).then(r => r.data),
+  reject: (id: string) => api.put(`/returns/${id}/reject`).then(r => r.data),
 };
 
 // ─── Reports ───────────────────────────────────────────────────────────────
@@ -66,6 +101,16 @@ export const reportsService = {
   salesByPeriod: (params?: Record<string, any>) => api.get('/reports/sales-by-period', { params }).then(r => r.data),
   stockValue: () => api.get('/reports/stock-value').then(r => r.data),
   stockAlerts: () => api.get('/reports/stock-alerts').then(r => r.data),
+  downloadSalesExcel: async (params?: Record<string, any>) => {
+    const response = await api.get('/reports/sales/export', { params, responseType: 'blob' });
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `ventes.xlsx`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  },
 };
 
 // ─── Inventory ─────────────────────────────────────────────────────────────

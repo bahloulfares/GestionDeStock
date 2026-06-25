@@ -7,7 +7,7 @@ import {
 } from '@mui/material';
 import {
   Add as AddIcon, CheckCircle as ValidateIcon, Cancel as CancelIcon,
-  Delete as DeleteIcon, Visibility as ViewIcon,
+  Delete as DeleteIcon, Visibility as ViewIcon, PictureAsPdf as PdfIcon
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { purchasesService, suppliersService, productsService } from '../services';
@@ -125,10 +125,10 @@ export default function PurchasesPage() {
                 <TableRow><TableCell colSpan={6} align="center" sx={{ py: 4 }}><CircularProgress size={32} /></TableCell></TableRow>
               ) : data?.data?.map((o: any) => (
                 <TableRow key={o.id}>
-                  <TableCell><Typography variant="body2" fontFamily="monospace">{o.invoiceNumber || '—'}</Typography></TableCell>
-                  <TableCell><Typography variant="body2" fontWeight={500}>{o.supplier?.name || '—'}</Typography></TableCell>
+                  <TableCell><Typography variant="body2" sx={{ fontFamily: 'monospace' }}>{o.invoiceNumber || '—'}</Typography></TableCell>
+                  <TableCell><Typography variant="body2" sx={{ fontWeight: 500 }}>{o.supplier?.name || '—'}</Typography></TableCell>
                   <TableCell><Typography variant="caption">{dayjs(o.date || o.createdAt).format('DD/MM/YYYY')}</Typography></TableCell>
-                  <TableCell align="right"><Typography variant="body2" fontWeight={600}>{Number(o.total || 0).toFixed(3)} TND</Typography></TableCell>
+                  <TableCell align="right"><Typography variant="body2" sx={{ fontWeight: 600 }}>{Number(o.total || 0).toFixed(3)} TND</Typography></TableCell>
                   <TableCell><Chip label={STATUS_LABELS[o.status]} size="small" color={STATUS_COLORS[o.status]} /></TableCell>
                   <TableCell align="center">
                     <IconButton size="small" onClick={async () => { const d = await purchasesService.getOne(o.id); setViewDialog({ open: true, order: d }); }} sx={{ mr: 0.5 }}><ViewIcon fontSize="small" /></IconButton>
@@ -171,15 +171,15 @@ export default function PurchasesPage() {
 
             <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>Lignes de commande</Typography>
             {form.items.map((item, i) => (
-              <Stack key={i} direction="row" spacing={1} alignItems="center">
+              <Stack key={i} direction="row" spacing={1} sx={{ alignItems: 'center' }}>
                 <FormControl sx={{ flex: 2 }}>
                   <InputLabel>Produit *</InputLabel>
                   <Select value={item.productId} label="Produit *" onChange={e => updateItem(i, 'productId', e.target.value)} size="small">
                     {products.map((p: any) => <MenuItem key={p.id} value={p.id}>{p.name}</MenuItem>)}
                   </Select>
                 </FormControl>
-                <TextField label="Qté *" type="number" value={item.qty} onChange={e => updateItem(i, 'qty', e.target.value)} size="small" sx={{ width: 80 }} inputProps={{ min: 1 }} />
-                <TextField label="Prix achat *" type="number" value={item.priceBuy} onChange={e => updateItem(i, 'priceBuy', e.target.value)} size="small" sx={{ width: 120 }} inputProps={{ step: '0.001', min: 0 }} />
+                <TextField label="Qté *" type="number" value={item.qty} onChange={e => updateItem(i, 'qty', e.target.value)} size="small" sx={{ width: 80 }} slotProps={{ htmlInput: { min: 1 } }} />
+                <TextField label="Prix achat *" type="number" value={item.priceBuy} onChange={e => updateItem(i, 'priceBuy', e.target.value)} size="small" sx={{ width: 120 }} slotProps={{ htmlInput: { step: '0.001', min: 0 } }} />
                 <IconButton size="small" color="error" onClick={() => removeItem(i)} disabled={form.items.length === 1}><CancelIcon fontSize="small" /></IconButton>
               </Stack>
             ))}
@@ -201,7 +201,7 @@ export default function PurchasesPage() {
           {viewDialog.order && (
             <Box>
               <Stack direction="row" spacing={3} sx={{ mb: 2 }}>
-                <Box><Typography variant="caption" color="text.secondary">Fournisseur</Typography><Typography fontWeight={600}>{viewDialog.order.supplier?.name}</Typography></Box>
+                <Box><Typography variant="caption" color="text.secondary">Fournisseur</Typography><Typography sx={{ fontWeight: 600 }}>{viewDialog.order.supplier?.name}</Typography></Box>
                 <Box><Typography variant="caption" color="text.secondary">Statut</Typography><div><Chip label={STATUS_LABELS[viewDialog.order.status]} size="small" color={STATUS_COLORS[viewDialog.order.status]} /></div></Box>
                 <Box><Typography variant="caption" color="text.secondary">Date</Typography><Typography>{dayjs(viewDialog.order.date || viewDialog.order.createdAt).format('DD/MM/YYYY')}</Typography></Box>
               </Stack>
@@ -225,7 +225,10 @@ export default function PurchasesPage() {
             </Box>
           )}
         </DialogContent>
-        <DialogActions sx={{ p: 2 }}>
+        <DialogActions sx={{ p: 2, justifyContent: 'space-between' }}>
+          <Button startIcon={<PdfIcon />} onClick={() => purchasesService.downloadOrderPdf(viewDialog.order.id)} variant="outlined">
+            Bon de commande PDF
+          </Button>
           <Button onClick={() => setViewDialog({ open: false })}>Fermer</Button>
         </DialogActions>
       </Dialog>

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import {
   Box, Card, Typography, Button, Table, TableBody, TableCell, TableContainer,
   TableHead, TableRow, Chip, Dialog, DialogTitle, DialogContent, DialogActions,
-  TextField, Alert, Stack, CircularProgress, Switch, FormControlLabel,
+  TextField, Alert, Stack, CircularProgress, Switch,
   Select, MenuItem, FormControl, InputLabel,
 } from '@mui/material';
 import { Add as AddIcon } from '@mui/icons-material';
@@ -58,7 +58,7 @@ export default function UsersPage() {
                 <TableRow><TableCell colSpan={5} align="center" sx={{ py: 4 }}><CircularProgress size={32} /></TableCell></TableRow>
               ) : (data || []).map((u: any) => (
                 <TableRow key={u.id}>
-                  <TableCell><Typography variant="body2" fontWeight={500}>{u.email}</Typography></TableCell>
+                  <TableCell><Typography variant="body2" sx={{ fontWeight: 500 }}>{u.email}</Typography></TableCell>
                   <TableCell>
                     <Chip label={u.role === 'ADMIN' ? 'Administrateur' : 'Employé'} size="small" color={u.role === 'ADMIN' ? 'primary' : 'default'} />
                   </TableCell>
