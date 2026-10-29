@@ -16,6 +16,8 @@ import ReportsPage from './pages/ReportsPage';
 import InventoryPage from './pages/InventoryPage';
 import UsersPage from './pages/UsersPage';
 import ReturnsPage from './pages/ReturnsPage';
+import SuperAdminPage from './pages/SuperAdminPage';
+import MySubscriptionPage from './pages/MySubscriptionPage';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   if (!authStore.isAuthenticated()) return <Navigate to="/login" replace />;
@@ -26,6 +28,19 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
   if (!authStore.isAuthenticated()) return <Navigate to="/login" replace />;
   if (!authStore.isAdmin()) return <Navigate to="/" replace />;
   return <>{children}</>;
+}
+
+function SuperAdminRoute({ children }: { children: React.ReactNode }) {
+  if (!authStore.isAuthenticated()) return <Navigate to="/login" replace />;
+  if (!authStore.isSuperAdmin()) return <Navigate to="/" replace />;
+  return <>{children}</>;
+}
+
+function HomeRedirect() {
+  if (authStore.isSuperAdmin()) {
+    return <Navigate to="/super-admin" replace />;
+  }
+  return <DashboardPage />;
 }
 
 export default function App() {
@@ -42,6 +57,7 @@ export default function App() {
       <Routes>
         <Route path="/login" element={isAuth ? <Navigate to="/" replace /> : <LoginPage onLogin={() => setIsAuth(true)} />} />
         <Route path="/setup" element={isAuth ? <Navigate to="/" replace /> : <SetupPage />} />
+        <Route path="/register" element={isAuth ? <Navigate to="/" replace /> : <SetupPage />} />
         <Route path="/forgot-password" element={isAuth ? <Navigate to="/" replace /> : <ForgotPasswordPage />} />
         <Route path="/reset-password" element={isAuth ? <Navigate to="/" replace /> : <ResetPasswordPage />} />
         <Route path="/" element={
@@ -49,7 +65,9 @@ export default function App() {
             <AppLayout onLogout={() => setIsAuth(false)} />
           </PrivateRoute>
         }>
-          <Route index element={<DashboardPage />} />
+          <Route index element={<HomeRedirect />} />
+          <Route path="super-admin" element={<SuperAdminRoute><SuperAdminPage /></SuperAdminRoute>} />
+          <Route path="my-subscription" element={<AdminRoute><MySubscriptionPage /></AdminRoute>} />
           <Route path="products" element={<ProductsPage />} />
           <Route path="categories" element={<AdminRoute><CategoriesPage /></AdminRoute>} />
           <Route path="suppliers" element={<AdminRoute><SuppliersPage /></AdminRoute>} />

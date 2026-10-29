@@ -20,9 +20,12 @@ import {
   Store as StoreIcon,
   Warning as WarningIcon,
   AssignmentReturn as ReturnsIcon,
+  AdminPanelSettings as SuperAdminIcon,
+  CardMembership as SubscriptionIcon,
 } from '@mui/icons-material';
+import { Alert, Button } from '@mui/material';
 import { authStore } from '../../store/auth.store';
-import { authService } from '../../services';
+import { authService, tenantSubscriptionService } from '../../services';
 import { useQuery } from '@tanstack/react-query';
 import { dashboardService } from '../../services';
 
@@ -33,6 +36,7 @@ interface NavItem {
   path: string;
   icon: React.ReactNode;
   adminOnly?: boolean;
+  superAdminOnly?: boolean;
   badge?: number;
 }
 
@@ -47,26 +51,47 @@ export default function AppLayout({ onLogout }: AppLayoutProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const user = authStore.getUser();
+  const isSuperAdmin = authStore.isSuperAdmin();
   const isAdmin = authStore.isAdmin();
 
   const { data: dashData } = useQuery({
     queryKey: ['dashboard-mini'],
     queryFn: dashboardService.get,
+    enabled: !isSuperAdmin,
     refetchInterval: 60000,
   });
 
+  const { data: subData } = useQuery({
+    queryKey: ['my-subscription-mini'],
+    queryFn: tenantSubscriptionService.getMySubscription,
+    enabled: !isSuperAdmin && !!user?.tenantId,
+    refetchInterval: 120000,
+  });
+
   const navItems: NavItem[] = [
-    { label: 'Tableau de bord', path: '/', icon: <DashboardIcon /> },
-    { label: 'Produits', path: '/products', icon: <ProductsIcon />, badge: dashData?.lowStockCount || 0 },
-    { label: 'Catégories', path: '/categories', icon: <CategoryIcon />, adminOnly: true },
-    { label: 'Fournisseurs', path: '/suppliers', icon: <SuppliersIcon />, adminOnly: true },
-    { label: 'Achats', path: '/purchases', icon: <PurchasesIcon />, adminOnly: true },
-    { label: 'Ventes', path: '/sales', icon: <SalesIcon /> },
-    { label: 'Retours', path: '/returns', icon: <ReturnsIcon /> },
-    { label: 'Rapports', path: '/reports', icon: <ReportsIcon />, adminOnly: true },
-    { label: 'Inventaire', path: '/inventory', icon: <InventoryIcon />, adminOnly: true },
-    { label: 'Utilisateurs', path: '/users', icon: <UsersIcon />, adminOnly: true },
-  ].filter(item => !item.adminOnly || isAdmin);
+    // Menu Super-Admin
+    ...(isSuperAdmin
+      ? [
+          { label: 'Gestion Plateforme & Clients', path: '/super-admin', icon: <SuperAdminIcon /> },
+        ]
+      : []),
+    // Menu Boutique Standard
+    ...(!isSuperAdmin
+      ? [
+          { label: 'Tableau de bord', path: '/', icon: <DashboardIcon /> },
+          { label: 'Produits', path: '/products', icon: <ProductsIcon />, badge: dashData?.lowStockCount || 0 },
+          { label: 'Catégories', path: '/categories', icon: <CategoryIcon />, adminOnly: true },
+          { label: 'Fournisseurs', path: '/suppliers', icon: <SuppliersIcon />, adminOnly: true },
+          { label: 'Achats', path: '/purchases', icon: <PurchasesIcon />, adminOnly: true },
+          { label: 'Ventes', path: '/sales', icon: <SalesIcon /> },
+          { label: 'Retours', path: '/returns', icon: <ReturnsIcon /> },
+          { label: 'Rapports', path: '/reports', icon: <ReportsIcon />, adminOnly: true },
+          { label: 'Inventaire', path: '/inventory', icon: <InventoryIcon />, adminOnly: true },
+          { label: 'Utilisateurs', path: '/users', icon: <UsersIcon />, adminOnly: true },
+          { label: 'Mon Abonnement', path: '/my-subscription', icon: <SubscriptionIcon />, adminOnly: true },
+        ].filter(item => !item.adminOnly || isAdmin)
+      : []),
+  ];
 
   const handleLogout = async () => {
     const refreshToken = localStorage.getItem('refreshToken');
@@ -170,9 +195,15 @@ export default function AppLayout({ onLogout }: AppLayoutProps) {
               {user?.email}
             </Typography>
             <Chip
-              label={isAdmin ? 'Administrateur' : 'Employé'}
+              label={
+                isSuperAdmin
+                  ? 'Super-Admin'
+                  : isAdmin
+                  ? 'Administrateur'
+                  : 'Employé'
+              }
               size="small"
-              color={isAdmin ? 'primary' : 'default'}
+              color={isSuperAdmin ? 'secondary' : isAdmin ? 'primary' : 'default'}
               sx={{ height: 18, fontSize: '0.65rem' }}
             />
           </Box>
@@ -244,6 +275,63 @@ export default function AppLayout({ onLogout }: AppLayoutProps) {
           bgcolor: 'background.default',
         }}
       >
+        {/* Bannière d'alerte Abonnement pour les Boutiques */}
+        {!isSuperAdmin && subData && (
+          <>
+            {subData.isExpired ? (
+              <Alert
+                severity="error"
+                sx={{ mb: 3, borderRadius: 2 }}
+                action={
+                  <Button
+                    color="inherit"
+                    size="small"
+                    onClick={() => navigate('/my-subscription')}
+                    sx={{ fontWeight: 700 }}
+                  >
+                    Renouveler (+216 22 000 000)
+                  </Button>
+                }
+              >
+                <strong>Abonnement Expiré :</strong> Votre accès en création/modification est suspendu. Veuillez contacter l'administrateur pour renouveler votre licence.
+              </Alert>
+            ) : subData.isExpiringSoon ? (
+              <Alert
+                severity="warning"
+                sx={{ mb: 3, borderRadius: 2 }}
+                action={
+                  <Button
+                    color="inherit"
+                    size="small"
+                    onClick={() => navigate('/my-subscription')}
+                    sx={{ fontWeight: 700 }}
+                  >
+                    Payer mon abonnement
+                  </Button>
+                }
+              >
+                <strong>Alerte Fin de Licence :</strong> Votre abonnement expire dans <strong>{subData.daysLeft} jours</strong> (le {new Date(subData.expiresAt).toLocaleDateString('fr-FR')}).
+              </Alert>
+            ) : subData.status === 'TRIAL' ? (
+              <Alert
+                severity="info"
+                sx={{ mb: 3, borderRadius: 2 }}
+                action={
+                  <Button
+                    color="inherit"
+                    size="small"
+                    onClick={() => navigate('/my-subscription')}
+                  >
+                    Voir l'offre
+                  </Button>
+                }
+              >
+                Période d'essai gratuite StockTN — Il vous reste <strong>{subData.daysLeft} jours</strong> d'utilisation sans frais.
+              </Alert>
+            ) : null}
+          </>
+        )}
+
         <Outlet />
       </Box>
     </Box>

@@ -18,8 +18,10 @@ import { InventoryModule } from './inventory/inventory.module';
 import { ActivityLogsModule } from './activity-logs/activity-logs.module';
 import { ReturnsModule } from './returns/returns.module';
 import { MailModule } from './mail/mail.module';
+import { SuperAdminModule } from './super-admin/super-admin.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
+import { SubscriptionGuard } from './common/guards/subscription.guard';
 
 @Module({
   imports: [
@@ -57,6 +59,7 @@ import { RolesGuard } from './common/guards/roles.guard';
     ActivityLogsModule,
     ReturnsModule,
     MailModule,
+    SuperAdminModule,
   ],
   providers: [
     // Guards globaux — appliqués sur toutes les routes
@@ -71,6 +74,10 @@ import { RolesGuard } from './common/guards/roles.guard';
     {
       provide: APP_GUARD,
       useClass: RolesGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: SubscriptionGuard,
     },
   ],
 })

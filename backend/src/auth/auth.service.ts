@@ -25,22 +25,29 @@ export class AuthService {
     private mailService: MailService,
   ) {}
 
-  // ─── Setup (Initialisation de l'application) ──────────────────────────────
+  // ─── Setup (Initialisation de l'application / Premier démarrage) ───────────
   async setup(dto: RegisterDto) {
     const userCount = await this.prisma.user.count();
     if (userCount > 0) {
-      throw new ForbiddenException('Le premier démarrage est déjà effectué (Setup already completed)');
+      // Si l'application a déjà des utilisateurs, rediriger vers register pour créer un nouveau tenant
+      return this.register(dto);
     }
 
     const passwordHash = await bcrypt.hash(dto.password, BCRYPT_ROUNDS);
 
-    // Créer le tenant + utilisateur admin en transaction
+    // Si c'est le tout premier démarrage absolu : on crée le Super-Admin ou la première boutique
+    const oneYearFromNow = new Date();
+    oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
+
     const result = await this.prisma.$transaction(async (tx) => {
       const tenant = await tx.tenant.create({
         data: {
           name: dto.shopName,
           email: dto.email,
           phone: dto.phone,
+          plan: 'YEARLY',
+          status: 'ACTIVE',
+          subscriptionExpiresAt: oneYearFromNow,
         },
       });
 
@@ -67,18 +74,75 @@ export class AuthService {
     };
   }
 
-  // ─── Login ────────────────────────────────────────────────────────────────
-  async login(dto: LoginDto) {
-    // Chercher le tenant par email
-    const tenant = await this.prisma.tenant.findUnique({
+  // ─── Register (Nouvelle boutique cliente avec 14 jours d'essai gratuit) ────
+  async register(dto: RegisterDto) {
+    // Vérifier si un tenant avec cet email existe déjà
+    const existingTenant = await this.prisma.tenant.findUnique({
       where: { email: dto.email },
     });
+    if (existingTenant) {
+      throw new ConflictException('Une boutique avec cet email existe déjà');
+    }
 
-    // Chercher l'utilisateur (peut être un sous-utilisateur)
+    // Vérifier si un utilisateur global avec cet email existe
+    const existingUser = await this.prisma.user.findFirst({
+      where: { email: dto.email },
+    });
+    if (existingUser) {
+      throw new ConflictException('Un utilisateur avec cet email existe déjà');
+    }
+
+    const passwordHash = await bcrypt.hash(dto.password, BCRYPT_ROUNDS);
+
+    // Période d'essai de 14 jours gratuite
+    const trialExpiry = new Date();
+    trialExpiry.setDate(trialExpiry.getDate() + 14);
+
+    const result = await this.prisma.$transaction(async (tx) => {
+      const tenant = await tx.tenant.create({
+        data: {
+          name: dto.shopName,
+          email: dto.email,
+          phone: dto.phone,
+          plan: 'TRIAL',
+          status: 'TRIAL',
+          subscriptionExpiresAt: trialExpiry,
+        },
+      });
+
+      const user = await tx.user.create({
+        data: {
+          tenantId: tenant.id,
+          email: dto.email,
+          passwordHash,
+          role: 'ADMIN',
+          isActive: true,
+          isVerified: true,
+          verifyToken: null,
+        },
+      });
+
+      return { tenant, user };
+    });
+
+    console.log(`[REGISTER] New shop registered: ${dto.shopName} (${dto.email}) with 14-day trial`);
+
+    return {
+      message: 'Compte créé avec succès ! Vous bénéficiez de 14 jours d\'essai gratuit.',
+      tenantId: result.tenant.id,
+    };
+  }
+
+  // ─── Login ────────────────────────────────────────────────────────────────
+  async login(dto: LoginDto) {
+    // Chercher l'utilisateur avec son tenant éventuel
     const user = await this.prisma.user.findFirst({
       where: {
         email: dto.email,
         isActive: true,
+      },
+      include: {
+        tenant: true,
       },
     });
 
@@ -95,7 +159,36 @@ export class AuthService {
       throw new UnauthorizedException('Compte non vérifié. Vérifiez votre email.');
     }
 
-    return this.generateTokens(user.id, user.email, user.role, user.tenantId);
+    // Si c'est un utilisateur rattaché à une boutique (ADMIN ou EMPLOYEE)
+    let subscriptionInfo: any = null;
+    if (user.tenant) {
+      if (user.tenant.isBlocked) {
+        throw new ForbiddenException(
+          `Accès suspendu : ${user.tenant.blockReason || 'Veuillez contacter le support pour réactiver votre boutique.'}`,
+        );
+      }
+
+      const now = new Date();
+      const expiresAt = new Date(user.tenant.subscriptionExpiresAt);
+      const isExpired = expiresAt < now;
+      const daysLeft = Math.ceil((expiresAt.getTime() - now.getTime()) / (1000 * 3600 * 24));
+
+      subscriptionInfo = {
+        status: isExpired ? 'EXPIRED' : user.tenant.status,
+        plan: user.tenant.plan,
+        expiresAt: user.tenant.subscriptionExpiresAt,
+        daysLeft: Math.max(0, daysLeft),
+        isExpired,
+        shopName: user.tenant.name,
+      };
+    }
+
+    const tokens = await this.generateTokens(user.id, user.email, user.role, user.tenantId);
+
+    return {
+      ...tokens,
+      subscription: subscriptionInfo,
+    };
   }
 
   // ─── Forgot Password ──────────────────────────────────────────────────────
@@ -292,7 +385,7 @@ export class AuthService {
     userId: string,
     email: string,
     role: string,
-    tenantId: string,
+    tenantId: string | null,
   ) {
     const payload = { sub: userId, email, role, tenantId };
 

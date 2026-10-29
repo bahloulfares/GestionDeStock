@@ -5,6 +5,9 @@ export const authService = {
   login: (email: string, password: string) =>
     api.post('/auth/login', { email, password }).then(r => r.data),
 
+  register: (shopName: string, email: string, password: string, phone?: string) =>
+    api.post('/auth/register', { shopName, email, password, phone }).then(r => r.data),
+
   setup: (shopName: string, email: string, password: string, phone?: string) =>
     api.post('/auth/setup', { shopName, email, password, phone }).then(r => r.data),
 
@@ -16,6 +19,24 @@ export const authService = {
 
   logout: (refreshToken: string) =>
     api.post('/auth/logout', { refreshToken }),
+};
+
+// ─── Super Admin (Gestion Plateforme & Licences) ───────────────────────────
+export const superAdminService = {
+  getStats: () => api.get('/super-admin/stats').then(r => r.data),
+  getTenants: (params?: { search?: string; status?: string; page?: number; limit?: number }) =>
+    api.get('/super-admin/tenants', { params }).then(r => r.data),
+  getTenant: (id: string) => api.get(`/super-admin/tenants/${id}`).then(r => r.data),
+  createTenant: (data: any) => api.post('/super-admin/tenants', data).then(r => r.data),
+  renewSubscription: (id: string, data: { durationMonths: number; amount: number; paymentMethod: string; notes?: string }) =>
+    api.post(`/super-admin/tenants/${id}/subscription`, data).then(r => r.data),
+  toggleBlock: (id: string, data: { isBlocked: boolean; blockReason?: string }) =>
+    api.patch(`/super-admin/tenants/${id}/toggle-block`, data).then(r => r.data),
+};
+
+// ─── Mon Abonnement (Espace Boutique) ──────────────────────────────────────
+export const tenantSubscriptionService = {
+  getMySubscription: () => api.get('/tenants/my-subscription').then(r => r.data),
 };
 
 // ─── Dashboard ─────────────────────────────────────────────────────────────

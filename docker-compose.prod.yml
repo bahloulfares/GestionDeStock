@@ -1,0 +1,69 @@
+services:
+  # ─── BASE DE DONNÉES POSTGRESQL ─────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: stocktn_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-stocktn_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-stocktn_db}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-stocktn_user} -d ${POSTGRES_DB:-stocktn_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - stocktn_network
+
+  # ─── API BACKEND NESTJS ─────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: stocktn_backend
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-stocktn_user}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-stocktn_db}?schema=public
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-15m}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-7d}
+      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASS: ${SMTP_PASS}
+      SMTP_FROM: ${SMTP_FROM:-"StockTN <noreply@stocktn.tn>"}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost}
+    networks:
+      - stocktn_network
+
+  # ─── FRONTEND REACT + REVERSE PROXY NGINX ──────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: stocktn_frontend
+    restart: always
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+    networks:
+      - stocktn_network
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  stocktn_network:
+    driver: bridge

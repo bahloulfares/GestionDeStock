@@ -32,8 +32,15 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
     try {
       const data = await authService.login(email, password);
       authStore.setTokens(data.accessToken, data.refreshToken);
+      if (data.subscription) {
+        authStore.setSubscription(data.subscription);
+      }
       onLogin();
-      navigate('/');
+      if (data.role === 'SUPER_ADMIN') {
+        navigate('/super-admin');
+      } else {
+        navigate('/');
+      }
     } catch (err: any) {
       setError(err.response?.data?.message || 'Email ou mot de passe incorrect');
     } finally {
@@ -50,7 +57,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
       justifyContent: 'center',
       p: 2,
     }}>
-      <Box sx={{ width: '100%', maxWidth: 420 }}>
+      <Box sx={{ width: '100%', maxWidth: 440 }}>
         {/* Logo */}
         <Box sx={{ textAlign: 'center', mb: 4 }}>
           <Box sx={{
@@ -65,17 +72,17 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
             StockTN
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Gestion de stocks pour boutiques mobiles
+            Plateforme de gestion de stocks pour boutiques mobiles & commerces
           </Typography>
         </Box>
 
-        <Card sx={{ boxShadow: '0 20px 60px rgba(0,0,0,0.1)', border: 'none' }}>
+        <Card sx={{ boxShadow: '0 20px 60px rgba(0,0,0,0.1)', border: 'none', borderRadius: 3 }}>
           <CardContent sx={{ p: 4 }}>
             <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5 }}>
               Connexion
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-              Accédez à votre espace de gestion
+              Accédez à votre espace boutique ou gestion plateforme
             </Typography>
 
             {error && (
@@ -137,18 +144,18 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
             </Box>
 
             <Divider sx={{ my: 3 }}>
-              <Typography variant="caption" color="text.secondary">Démo</Typography>
+              <Typography variant="caption" color="text.secondary">Comptes d'accès</Typography>
             </Divider>
 
             <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
-              <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', display: 'block', mb: 0.5 }}>
-                Comptes de démo :
+              <Typography variant="caption" sx={{ fontWeight: 700, color: '#7E3AF2', display: 'block', mb: 0.5 }}>
+                👑 Super-Admin (Vous) : superadmin@stocktn.tn / SuperAdmin@2026!
               </Typography>
               <Typography variant="caption" sx={{ display: 'block', color: 'text.secondary' }}>
-                👑 admin@demo.tn / Admin@2026!
+                🏢 Admin Boutique : admin@demo.tn / Admin@2026!
               </Typography>
               <Typography variant="caption" sx={{ display: 'block', color: 'text.secondary' }}>
-                👤 employe@demo.tn / Employe@2026!
+                👤 Vendeur Caisse : employe@demo.tn / Employe@2026!
               </Typography>
             </Box>
 
@@ -156,9 +163,9 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
               <Link to="/forgot-password" style={{ color: '#1A56DB', fontWeight: 600, fontSize: '0.875rem', textDecoration: 'none' }}>
                 Mot de passe oublié ?
               </Link>
-              <Box sx={{ mt: 1 }}>
-                <Link to="/setup" style={{ color: '#7E3AF2', fontWeight: 500, fontSize: '0.75rem', textDecoration: 'none', opacity: 0.8 }}>
-                  ⚙️ Premier démarrage (Configuration initiale)
+              <Box sx={{ mt: 1, p: 1.5, bgcolor: '#EEF2FF', borderRadius: 2 }}>
+                <Link to="/register" style={{ color: '#1A56DB', fontWeight: 700, fontSize: '0.875rem', textDecoration: 'none' }}>
+                  ✨ Nouvelle boutique ? Essai gratuit 14 jours
                 </Link>
               </Box>
             </Box>

@@ -27,11 +27,11 @@ export default function SetupPage() {
     setLoading(true);
     setError('');
     try {
-      await authService.setup(form.shopName, form.email, form.password, form.phone);
-      setSuccess('Application configurée avec succès ! Redirection...');
+      await authService.register(form.shopName, form.email, form.password, form.phone);
+      setSuccess('Boutique créée avec succès ! Vous bénéficiez de 14 jours d\'essai gratuit. Redirection...');
       setTimeout(() => navigate('/login'), 2000);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Erreur lors de la configuration initiale');
+      setError(err.response?.data?.message || 'Erreur lors de la création de la boutique');
     } finally {
       setLoading(false);
     }
@@ -43,7 +43,7 @@ export default function SetupPage() {
       background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)',
       display: 'flex', alignItems: 'center', justifyContent: 'center', p: 2,
     }}>
-      <Box sx={{ width: '100%', maxWidth: 460 }}>
+      <Box sx={{ width: '100%', maxWidth: 480 }}>
         <Box sx={{ textAlign: 'center', mb: 3 }}>
           <Box sx={{
             width: 64, height: 64, borderRadius: '16px',
@@ -55,10 +55,10 @@ export default function SetupPage() {
             <StoreIcon sx={{ color: 'white', fontSize: 32 }} />
           </Box>
           <Typography variant="h4" sx={{ color: 'white', letterSpacing: '-0.5px', fontWeight: 900 }}>
-            Premier Démarrage
+            Créer ma Boutique
           </Typography>
           <Typography variant="body2" sx={{ mt: 0.5, color: '#94a3b8' }}>
-            Configuration initiale du compte Administrateur StockTN
+            14 jours d'essai gratuit StockTN • Aucun paiement requis
           </Typography>
         </Box>
 
@@ -204,8 +204,17 @@ export default function SetupPage() {
                   }
                 }}
               >
-                {loading ? <CircularProgress size={24} sx={{ color: 'white' }} /> : "Initialiser l'Application"}
+                {loading ? <CircularProgress size={24} sx={{ color: 'white' }} /> : "Démarrer l'essai gratuit de 14 jours"}
               </Button>
+
+              <Box sx={{ mt: 3, textAlign: 'center' }}>
+                <Button
+                  onClick={() => navigate('/login')}
+                  sx={{ color: '#94a3b8', textTransform: 'none', fontSize: '0.875rem' }}
+                >
+                  Déjà un compte ? Se connecter
+                </Button>
+              </Box>
             </Box>
           </CardContent>
         </Card>

@@ -13,20 +13,47 @@ const prisma = new PrismaClient({ adapter } as any);
 async function main() {
   console.log('🌱 Seeding database...');
 
+  // ─── Super-Admin Plateforme (Propriétaire) ──────────────────────────────
+  const superAdminHash = await bcrypt.hash('SuperAdmin@2026!', 12);
+  const superAdmin = await prisma.user.findFirst({
+    where: { email: 'superadmin@stocktn.tn' },
+  });
+  if (!superAdmin) {
+    await prisma.user.create({
+      data: {
+        email: 'superadmin@stocktn.tn',
+        passwordHash: superAdminHash,
+        role: UserRole.SUPER_ADMIN,
+        isActive: true,
+        isVerified: true,
+      },
+    });
+    console.log('👑 Super-Admin créé : superadmin@stocktn.tn / SuperAdmin@2026!');
+  }
+
   // ─── Tenant démo ─────────────────────────────────────────────────────────
+  const oneYearFromNow = new Date();
+  oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
+
   const tenant = await prisma.tenant.upsert({
     where: { email: 'demo@stocktn.tn' },
-    update: {},
+    update: {
+      status: 'ACTIVE',
+      plan: 'YEARLY',
+      subscriptionExpiresAt: oneYearFromNow,
+    },
     create: {
       name: 'Boutique Mobile Demo',
       email: 'demo@stocktn.tn',
       phone: '+216 22 000 000',
-      plan: 'basic',
+      plan: 'YEARLY',
+      status: 'ACTIVE',
+      subscriptionExpiresAt: oneYearFromNow,
     },
   });
   console.log(`✅ Tenant créé : ${tenant.name}`);
 
-  // ─── Utilisateurs ─────────────────────────────────────────────────────────
+  // ─── Utilisateurs de la boutique ──────────────────────────────────────────
   const adminHash = await bcrypt.hash('Admin@2026!', 12);
   const employeeHash = await bcrypt.hash('Employe@2026!', 12);
 

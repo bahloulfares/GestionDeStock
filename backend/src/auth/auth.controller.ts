@@ -20,9 +20,17 @@ export class AuthController {
   @Post('setup')
   @ApiOperation({ summary: 'Configuration initiale — Premier démarrage de l\'application' })
   @ApiResponse({ status: 201, description: 'Application configurée avec succès' })
-  @ApiResponse({ status: 403, description: 'Setup déjà effectué' })
   setup(@Body() dto: RegisterDto) {
     return this.authService.setup(dto);
+  }
+
+  @Public()
+  @Post('register')
+  @ApiOperation({ summary: 'Inscription d\'une nouvelle boutique (Essai 14 jours gratuit)' })
+  @ApiResponse({ status: 201, description: 'Boutique créée avec succès' })
+  @ApiResponse({ status: 409, description: 'Email déjà utilisé' })
+  register(@Body() dto: RegisterDto) {
+    return this.authService.register(dto);
   }
 
   @Public()
