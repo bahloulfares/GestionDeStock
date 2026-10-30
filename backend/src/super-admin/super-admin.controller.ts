@@ -15,6 +15,7 @@ import {
   CreateTenantByAdminDto,
   RenewSubscriptionDto,
   ToggleBlockTenantDto,
+  ResetUserPasswordDto,
 } from './dto/super-admin.dto';
 import { Roles } from '../common/decorators/roles.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -83,6 +84,19 @@ export class SuperAdminController {
   ) {
     return this.superAdminService.toggleBlock(id, dto);
   }
+
+  @Roles('SUPER_ADMIN')
+  @Patch('tenants/:tenantId/users/:userId/reset-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Réinitialiser le mot de passe d\'un utilisateur d\'une boutique' })
+  resetUserPassword(
+    @Param('tenantId') tenantId: string,
+    @Param('userId') userId: string,
+    @Body() dto: ResetUserPasswordDto,
+  ) {
+    return this.superAdminService.resetUserPassword(tenantId, userId, dto.newPassword);
+  }
+
 }
 
 @ApiTags('Mon Abonnement (Espace Client)')

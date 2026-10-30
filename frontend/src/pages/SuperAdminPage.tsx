@@ -28,6 +28,9 @@ import {
   Alert,
   Tooltip,
   CircularProgress,
+  Tabs,
+  Tab,
+  Avatar,
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -41,6 +44,9 @@ import {
   Update as RenewIcon,
   LockOpen as UnlockIcon,
   Refresh as RefreshIcon,
+  Visibility as ViewIcon,
+  People as UsersIcon,
+  Receipt as ReceiptIcon,
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { superAdminService } from '../services';
@@ -54,6 +60,9 @@ export default function SuperAdminPage() {
   const [renewDialogOpen, setRenewDialogOpen] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [blockDialogOpen, setBlockDialogOpen] = useState(false);
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+  const [viewTenantId, setViewTenantId] = useState<string | null>(null);
+  const [detailsTab, setDetailsTab] = useState<number>(0);
   const [selectedTenant, setSelectedTenant] = useState<any>(null);
 
   // Formulaire Renouvellement
@@ -87,6 +96,12 @@ export default function SuperAdminPage() {
   const { data: tenantsData, isLoading: tenantsLoading, refetch: refetchTenants } = useQuery({
     queryKey: ['superadmin-tenants', search, statusFilter],
     queryFn: () => superAdminService.getTenants({ search, status: statusFilter }),
+  });
+
+  const { data: tenantDetails, isLoading: tenantDetailsLoading } = useQuery({
+    queryKey: ['superadmin-tenant-details', viewTenantId],
+    queryFn: () => superAdminService.getTenant(viewTenantId!),
+    enabled: !!viewTenantId && detailsDialogOpen,
   });
 
   // ─── Mutations ───────────────────────────────────────────────────────────
@@ -146,6 +161,12 @@ export default function SuperAdminPage() {
     setSelectedTenant(tenant);
     setBlockReason('');
     setBlockDialogOpen(true);
+  };
+
+  const handleOpenDetails = (tenantId: string) => {
+    setViewTenantId(tenantId);
+    setDetailsTab(0);
+    setDetailsDialogOpen(true);
   };
 
   const handleRenewSubmit = () => {
@@ -384,12 +405,21 @@ export default function SuperAdminPage() {
               tenantsData?.items?.map((t: any) => (
                 <TableRow key={t.id} hover>
                   <TableCell>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#1E293B' }}>
-                      {t.name}
-                    </Typography>
-                    <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
-                      {t.email} {t.phone ? `• ${t.phone}` : ''}
-                    </Typography>
+                    <Box
+                      onClick={() => handleOpenDetails(t.id)}
+                      sx={{
+                        cursor: 'pointer',
+                        display: 'inline-block',
+                        '&:hover .tenant-name': { color: 'primary.main', textDecoration: 'underline' },
+                      }}
+                    >
+                      <Typography variant="subtitle2" className="tenant-name" sx={{ fontWeight: 700, color: '#1E293B', transition: 'color 0.15s' }}>
+                        {t.name}
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
+                        {t.email} {t.phone ? `• ${t.phone}` : ''}
+                      </Typography>
+                    </Box>
                   </TableCell>
 
                   <TableCell>
@@ -427,7 +457,18 @@ export default function SuperAdminPage() {
                   </TableCell>
 
                   <TableCell align="right">
-                    <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+                    <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end', alignItems: 'center' }}>
+                      <Tooltip title="Fiche détaillée & Utilisateurs">
+                        <IconButton
+                          size="small"
+                          color="primary"
+                          onClick={() => handleOpenDetails(t.id)}
+                          sx={{ bgcolor: 'rgba(26, 86, 219, 0.08)', '&:hover': { bgcolor: 'rgba(26, 86, 219, 0.16)' } }}
+                        >
+                          <ViewIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+
                       <Tooltip title="Prolonger de 1 mois (+40 DT)">
                         <Button
                           size="small"
@@ -707,6 +748,264 @@ export default function SuperAdminPage() {
             }
           >
             {createTenantMutation.isPending ? 'Création...' : 'Créer le Client'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* ─── MODALE DÉTAILS COMPLETS DE LA BOUTIQUE & UTILISATEURS ───────────── */}
+      <Dialog
+        open={detailsDialogOpen}
+        onClose={() => setDetailsDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+        slotProps={{ paper: { sx: { borderRadius: 3 } } }}
+      >
+        <DialogTitle sx={{ p: 2.5, pb: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Box sx={{ width: 42, height: 42, borderRadius: 2, bgcolor: 'primary.50', color: 'primary.main', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <StoreIcon fontSize="medium" />
+            </Box>
+            <Box>
+              <Typography variant="h6" sx={{ fontWeight: 800, lineHeight: 1.2 }}>
+                {tenantDetails?.name || 'Chargement...'}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                Fiche détaillée et utilisateurs de la boutique
+              </Typography>
+            </Box>
+          </Box>
+          {tenantDetails && (
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <Chip
+                label={tenantDetails.plan === 'YEARLY' ? 'Abonnement Annuel' : tenantDetails.plan === 'MONTHLY' ? 'Abonnement Mensuel' : "Période d'essai"}
+                size="small"
+                variant="outlined"
+              />
+              <Chip
+                label={tenantDetails.isBlocked ? 'Suspendu' : tenantDetails.status === 'ACTIVE' ? 'Actif' : tenantDetails.status === 'EXPIRED' ? 'Expiré' : 'Essai'}
+                color={tenantDetails.isBlocked ? 'error' : tenantDetails.status === 'ACTIVE' ? 'success' : 'warning'}
+                size="small"
+              />
+            </Box>
+          )}
+        </DialogTitle>
+
+        <Box sx={{ px: 2.5, borderBottom: '1px solid', borderColor: 'divider' }}>
+          <Tabs value={detailsTab} onChange={(_, val) => setDetailsTab(val)}>
+            <Tab icon={<UsersIcon sx={{ fontSize: 18 }} />} iconPosition="start" label={`Utilisateurs & Activité (${tenantDetails?.users?.length || 0})`} />
+            <Tab icon={<ReceiptIcon sx={{ fontSize: 18 }} />} iconPosition="start" label={`Historique Paiements (${tenantDetails?.payments?.length || 0})`} />
+          </Tabs>
+        </Box>
+
+        <DialogContent sx={{ p: 2.5 }}>
+          {tenantDetailsLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+              <CircularProgress />
+            </Box>
+          ) : !tenantDetails ? (
+            <Alert severity="error">Impossible de charger les données de cette boutique.</Alert>
+          ) : detailsTab === 0 ? (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              {/* Infos Contact & Compteurs */}
+              <Grid container spacing={2}>
+                <Grid size={{ xs: 6, sm: 3 }}>
+                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, textAlign: 'center', bgcolor: '#F8FAFC' }}>
+                    <Typography variant="h5" sx={{ fontWeight: 800, color: 'primary.main' }}>
+                      {tenantDetails.counts?.users || 0}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+                      Utilisateurs
+                    </Typography>
+                  </Paper>
+                </Grid>
+                <Grid size={{ xs: 6, sm: 3 }}>
+                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, textAlign: 'center', bgcolor: '#F8FAFC' }}>
+                    <Typography variant="h5" sx={{ fontWeight: 800, color: '#0E9F6E' }}>
+                      {tenantDetails.counts?.products || 0}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+                      Produits en catalogue
+                    </Typography>
+                  </Paper>
+                </Grid>
+                <Grid size={{ xs: 6, sm: 3 }}>
+                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, textAlign: 'center', bgcolor: '#F8FAFC' }}>
+                    <Typography variant="h5" sx={{ fontWeight: 800, color: '#7E3AF2' }}>
+                      {tenantDetails.counts?.sales || 0}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+                      Ventes enregistrées
+                    </Typography>
+                  </Paper>
+                </Grid>
+                <Grid size={{ xs: 6, sm: 3 }}>
+                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, textAlign: 'center', bgcolor: '#F8FAFC' }}>
+                    <Typography variant="h5" sx={{ fontWeight: 800, color: '#D97706' }}>
+                      {tenantDetails.counts?.suppliers || 0}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+                      Fournisseurs
+                    </Typography>
+                  </Paper>
+                </Grid>
+              </Grid>
+
+              {/* Coordonnées */}
+              <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+                <Grid container spacing={2}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>Email boutique :</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>{tenantDetails.email}</Typography>
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>Téléphone :</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>{tenantDetails.phone || 'Non renseigné'}</Typography>
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>Date d'inscription :</Typography>
+                    <Typography variant="body2">{new Date(tenantDetails.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })}</Typography>
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>Expiration de l'abonnement :</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 600, color: tenantDetails.daysLeft <= 7 ? 'error.main' : 'text.primary' }}>
+                      {new Date(tenantDetails.subscriptionExpiresAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })} ({tenantDetails.daysLeft} jours restants)
+                    </Typography>
+                  </Grid>
+                </Grid>
+              </Paper>
+
+              {/* Tableau des utilisateurs de la boutique */}
+              <Box>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, color: '#1E293B' }}>
+                  Comptes utilisateurs de la boutique ({tenantDetails.users?.length || 0})
+                </Typography>
+                <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 2 }}>
+                  <Table size="small">
+                    <TableHead sx={{ bgcolor: '#F8FAFC' }}>
+                      <TableRow>
+                        <TableCell sx={{ fontWeight: 700 }}>Utilisateur</TableCell>
+                        <TableCell sx={{ fontWeight: 700 }}>Rôle</TableCell>
+                        <TableCell sx={{ fontWeight: 700 }}>Statut</TableCell>
+                        <TableCell sx={{ fontWeight: 700 }}>Créé le</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {tenantDetails.users?.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={4} align="center" sx={{ py: 3 }}>
+                            <Typography variant="body2" color="text.secondary">Aucun utilisateur rattaché.</Typography>
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        tenantDetails.users?.map((u: any) => (
+                          <TableRow key={u.id}>
+                            <TableCell>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                                <Avatar sx={{ width: 30, height: 30, bgcolor: u.role === 'ADMIN' ? 'primary.main' : 'grey.500', fontSize: '0.75rem', fontWeight: 700 }}>
+                                  {u.email.charAt(0).toUpperCase()}
+                                </Avatar>
+                                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                                  {u.email}
+                                </Typography>
+                              </Box>
+                            </TableCell>
+                            <TableCell>
+                              <Chip
+                                size="small"
+                                label={u.role === 'ADMIN' ? 'Administrateur Gérant' : 'Vendeur / Caisse'}
+                                color={u.role === 'ADMIN' ? 'primary' : 'default'}
+                                variant={u.role === 'ADMIN' ? 'filled' : 'outlined'}
+                                sx={{ height: 22, fontSize: '0.7rem' }}
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Chip
+                                size="small"
+                                label={u.isActive ? 'Actif' : 'Désactivé'}
+                                color={u.isActive ? 'success' : 'error'}
+                                sx={{ height: 20, fontSize: '0.65rem' }}
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Typography variant="caption" color="text.secondary">
+                                {new Date(u.createdAt).toLocaleDateString('fr-FR')}
+                              </Typography>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </Box>
+            </Box>
+          ) : (
+            /* Tab 1 : Historique des paiements */
+            <Box>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, color: '#1E293B' }}>
+                Historique des encaissements & renouvellements
+              </Typography>
+              <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 2 }}>
+                <Table size="small">
+                  <TableHead sx={{ bgcolor: '#F8FAFC' }}>
+                    <TableRow>
+                      <TableCell sx={{ fontWeight: 700 }}>Date d'encaissement</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>Montant</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>Durée</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>Période couverte</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>Moyen de paiement</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>Notes</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {tenantDetails.payments?.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
+                          <Typography variant="body2" color="text.secondary">Aucun paiement enregistré pour cette boutique pour le moment.</Typography>
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      tenantDetails.payments?.map((p: any) => (
+                        <TableRow key={p.id}>
+                          <TableCell>
+                            <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                              {new Date(p.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="body2" sx={{ fontWeight: 800, color: '#0E9F6E' }}>
+                              {p.amount.toFixed(3)} DT
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Chip size="small" label={`+${p.durationMonths} mois`} variant="outlined" sx={{ height: 22 }} />
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="caption" color="text.secondary">
+                              {new Date(p.startDate).toLocaleDateString('fr-FR')} → {new Date(p.endDate).toLocaleDateString('fr-FR')}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Chip size="small" label={p.paymentMethod} sx={{ height: 20, fontSize: '0.65rem' }} />
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="caption" color="text.secondary">
+                              {p.notes || '—'}
+                            </Typography>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </Box>
+          )}
+        </DialogContent>
+
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={() => setDetailsDialogOpen(false)} variant="contained">
+            Fermer
           </Button>
         </DialogActions>
       </Dialog>

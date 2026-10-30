@@ -87,3 +87,10 @@ export class ToggleBlockTenantDto {
   @IsString()
   blockReason?: string;
 }
+
+export class ResetUserPasswordDto {
+  @ApiProperty({ example: 'NouveauMotDePasse123!', description: 'Nouveau mot de passe (min 8 caracteres)' })
+  @IsString()
+  @MinLength(8)
+  newPassword: string;
+}

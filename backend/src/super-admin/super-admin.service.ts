@@ -472,4 +472,29 @@ export class SuperAdminService {
       },
     };
   }
+
+  async resetUserPassword(tenantId: string, userId: string, newPassword: string) {
+    const user = await this.prisma.user.findFirst({
+      where: { id: userId, tenantId },
+    });
+    if (!user) {
+      throw new NotFoundException('Utilisateur introuvable dans cette boutique.');
+    }
+    const passwordHash = await bcrypt.hash(newPassword, 12);
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { passwordHash, passwordChangedAt: new Date() },
+    });
+    // Révoquer toutes les sessions actives de cet utilisateur par sécurité
+    try {
+      await this.prisma.tokenStore.updateMany({
+        where: { userId },
+        data: { revoked: true },
+      });
+    } catch (_e) {
+      // tokenStore may not exist in all schemas — ignore
+    }
+    return { message: 'Mot de passe réinitialisé avec succès.' };
+  }
+
 }
