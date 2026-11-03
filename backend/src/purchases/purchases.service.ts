@@ -6,6 +6,8 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ActivityLogsService } from '../activity-logs/activity-logs.service';
+import { PdfService } from '../pdf/pdf.service';
+import type { TDocumentDefinitions } from 'pdfmake/interfaces';
 import { CreatePurchaseOrderDto } from './dto/purchase.dto';
 
 function mapOrder(order: any) {
@@ -44,6 +46,7 @@ export class PurchasesService {
   constructor(
     private prisma: PrismaService,
     private activityLogs: ActivityLogsService,
+    private readonly pdfService: PdfService,
   ) {}
 
   // ─── GET /api/purchase-orders ────────────────────────────────────────────────
@@ -261,55 +264,69 @@ export class PurchasesService {
         items: { include: { product: true } },
         supplier: true,
         tenant: true,
-      }
+      },
     });
     if (!order) throw new NotFoundException('Bon de commande non trouvé');
 
-    const fonts = {
-      Helvetica: {
-        normal: 'Helvetica',
-        bold: 'Helvetica-Bold',
-        italics: 'Helvetica-Oblique',
-        bolditalics: 'Helvetica-BoldOblique'
-      }
-    };
-    
-    const pdfmake = require('pdfmake');
-    pdfmake.setFonts(fonts);
-    
-    const total = order.items.reduce((acc, item) => acc + (item.qty * Number(item.priceBuy)), 0);
+    const total = order.items.reduce(
+      (acc, item) => acc + item.qty * Number(item.priceBuy),
+      0,
+    );
 
-    const docDefinition = {
+    // Construction du document : nom boutique, titre BON DE COMMANDE,
+    // fournisseur, référence, date, tableau articles (désignation, qté,
+    // prix unitaire, montant) et total estimé. Document sans colonne TVA.
+    const docDefinition: TDocumentDefinitions = {
       defaultStyle: { font: 'Helvetica' },
       content: [
-        { text: order.tenant.name, fontSize: 20, bold: true, margin: [0, 0, 0, 5] },
-        { text: 'BON DE COMMANDE', fontSize: 16, bold: true, alignment: 'right', margin: [0, -25, 0, 20] },
-        
+        {
+          text: order.tenant.name,
+          fontSize: 20,
+          bold: true,
+          margin: [0, 0, 0, 5],
+        },
+        {
+          text: 'BON DE COMMANDE',
+          fontSize: 16,
+          bold: true,
+          alignment: 'right',
+          margin: [0, -25, 0, 20],
+        },
+
         { text: `Fournisseur : ${order.supplier.name}`, margin: [0, 5, 0, 2] },
         { text: `Réf : #${order.id.slice(-8).toUpperCase()}`, margin: [0, 5, 0, 2] },
         { text: `Date : ${order.date.toLocaleDateString()}`, margin: [0, 0, 0, 20] },
-        
+
         {
           table: {
             headerRows: 1,
             widths: ['*', 'auto', 'auto', 'auto'],
             body: [
-              [{ text: 'Désignation', bold: true }, { text: 'Qté', bold: true }, { text: 'Prix Unitaire', bold: true }, { text: 'Montant', bold: true }],
-              ...order.items.map(item => [
+              [
+                { text: 'Désignation', bold: true },
+                { text: 'Qté', bold: true },
+                { text: 'Prix Unitaire', bold: true },
+                { text: 'Montant', bold: true },
+              ],
+              ...order.items.map((item) => [
                 item.product.name,
                 item.qty.toString(),
                 Number(item.priceBuy).toFixed(3),
-                (item.qty * Number(item.priceBuy)).toFixed(3)
+                (item.qty * Number(item.priceBuy)).toFixed(3),
               ]),
-              [{ text: 'TOTAL ESTIMÉ (TND)', colSpan: 3, alignment: 'right', bold: true }, {}, {}, { text: total.toFixed(3), bold: true }]
-            ]
+              [
+                { text: 'TOTAL ESTIMÉ (TND)', colSpan: 3, alignment: 'right', bold: true },
+                {},
+                {},
+                { text: total.toFixed(3), bold: true },
+              ],
+            ],
           },
-          layout: 'lightHorizontalLines'
-        }
-      ]
+          layout: 'lightHorizontalLines',
+        },
+      ],
     };
 
-    const pdf = pdfmake.createPdf(docDefinition);
-    return pdf.getBuffer();
+    return await this.pdfService.generateBuffer(docDefinition);
   }
 }

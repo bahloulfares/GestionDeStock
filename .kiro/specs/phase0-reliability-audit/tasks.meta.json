@@ -1,0 +1,564 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1.1 Modifier `auth.service.ts::setup()` pour compter uniquement les SUPER_ADMIN": [
+      {
+        "executionId": "69d30321-eda9-4b90-8be9-ee0e744e2dfc",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793537585204
+      },
+      {
+        "executionId": "69d30321-eda9-4b90-8be9-ee0e744e2dfc",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793537593428
+      },
+      {
+        "executionId": "69d30321-eda9-4b90-8be9-ee0e744e2dfc",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793538323724
+      }
+    ],
+    "2.1 Activer `trust proxy` dans `main.ts` pour la production": [
+      {
+        "executionId": "69d30321-eda9-4b90-8be9-ee0e744e2dfc",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793537585248
+      },
+      {
+        "executionId": "69d30321-eda9-4b90-8be9-ee0e744e2dfc",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793537596261
+      },
+      {
+        "executionId": "69d30321-eda9-4b90-8be9-ee0e744e2dfc",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793538327013
+      }
+    ],
+    "2.2 Créer `ThrottlerProxyGuard` dans `backend/src/common/guards/throttler-proxy.guard.ts`": [
+      {
+        "executionId": "69d30321-eda9-4b90-8be9-ee0e744e2dfc",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793537585288
+      },
+      {
+        "executionId": "69d30321-eda9-4b90-8be9-ee0e744e2dfc",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793538349362
+      },
+      {
+        "executionId": "69d30321-eda9-4b90-8be9-ee0e744e2dfc",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793539223955
+      }
+    ],
+    "2.3 Créer `ThrottlerExceptionFilter` dans `backend/src/common/filters/throttler-exception.filter.ts`": [
+      {
+        "executionId": "69d30321-eda9-4b90-8be9-ee0e744e2dfc",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793537585336
+      },
+      {
+        "executionId": "69d30321-eda9-4b90-8be9-ee0e744e2dfc",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793539256183
+      },
+      {
+        "executionId": "3c8c8f2f-6c14-4b95-b999-497f020141ae",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793541028455
+      }
+    ],
+    "2.4 Câbler `ThrottlerProxyGuard` et `ThrottlerExceptionFilter` dans `app.module.ts`": [
+      {
+        "executionId": "69d30321-eda9-4b90-8be9-ee0e744e2dfc",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793537585365
+      },
+      {
+        "executionId": "3c8c8f2f-6c14-4b95-b999-497f020141ae",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793541141633
+      }
+    ],
+    "3.1 Créer `backend/src/pdf/pdf.service.ts`": [
+      {
+        "executionId": "69d30321-eda9-4b90-8be9-ee0e744e2dfc",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793537585398
+      },
+      {
+        "executionId": "69d30321-eda9-4b90-8be9-ee0e744e2dfc",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793537600274
+      },
+      {
+        "executionId": "69d30321-eda9-4b90-8be9-ee0e744e2dfc",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793538330025
+      }
+    ],
+    "3.2 Créer `backend/src/pdf/pdf.module.ts` et l'exporter globalement": [
+      {
+        "executionId": "69d30321-eda9-4b90-8be9-ee0e744e2dfc",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793537585448
+      },
+      {
+        "executionId": "69d30321-eda9-4b90-8be9-ee0e744e2dfc",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793538352503
+      },
+      {
+        "executionId": "69d30321-eda9-4b90-8be9-ee0e744e2dfc",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793539231631
+      }
+    ],
+    "3.3 Refactorer `sales.service.ts::generateInvoicePdf()` pour utiliser `PdfService`": [
+      {
+        "executionId": "69d30321-eda9-4b90-8be9-ee0e744e2dfc",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793537585476
+      },
+      {
+        "executionId": "69d30321-eda9-4b90-8be9-ee0e744e2dfc",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793539259870
+      },
+      {
+        "executionId": "3c8c8f2f-6c14-4b95-b999-497f020141ae",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793541041886
+      }
+    ],
+    "3.4 Refactorer `purchases.service.ts::generateOrderPdf()` pour utiliser `PdfService`": [
+      {
+        "executionId": "69d30321-eda9-4b90-8be9-ee0e744e2dfc",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793537585504
+      },
+      {
+        "executionId": "3c8c8f2f-6c14-4b95-b999-497f020141ae",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793541146710
+      },
+      {
+        "executionId": "3c8c8f2f-6c14-4b95-b999-497f020141ae",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793541920772
+      }
+    ],
+    "4. Checkpoint — Compiler et vérifier les blocs indépendants": [
+      {
+        "executionId": "69d30321-eda9-4b90-8be9-ee0e744e2dfc",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793537585539
+      },
+      {
+        "executionId": "3c8c8f2f-6c14-4b95-b999-497f020141ae",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793541984368
+      },
+      {
+        "executionId": "3c8c8f2f-6c14-4b95-b999-497f020141ae",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793542074739
+      }
+    ],
+    "5.1 Mettre à jour `backend/prisma/schema.prisma` avec les deux changements de schéma": [
+      {
+        "executionId": "69d30321-eda9-4b90-8be9-ee0e744e2dfc",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793537585588
+      },
+      {
+        "executionId": "69d30321-eda9-4b90-8be9-ee0e744e2dfc",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793537603422
+      },
+      {
+        "executionId": "69d30321-eda9-4b90-8be9-ee0e744e2dfc",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793538333492
+      }
+    ],
+    "5.2 Générer la migration Prisma `phase0_reliability`": [
+      {
+        "executionId": "69d30321-eda9-4b90-8be9-ee0e744e2dfc",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793537585616
+      },
+      {
+        "executionId": "69d30321-eda9-4b90-8be9-ee0e744e2dfc",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793538355472
+      },
+      {
+        "executionId": "69d30321-eda9-4b90-8be9-ee0e744e2dfc",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793539236025
+      }
+    ],
+    "5.3 Modifier `inventory.service.ts::create()` — statut DRAFT, sans toucher aux stocks": [
+      {
+        "executionId": "69d30321-eda9-4b90-8be9-ee0e744e2dfc",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793537585646
+      },
+      {
+        "executionId": "69d30321-eda9-4b90-8be9-ee0e744e2dfc",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793539263663
+      },
+      {
+        "executionId": "3c8c8f2f-6c14-4b95-b999-497f020141ae",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793541059119
+      }
+    ],
+    "5.4 Ajouter `inventory.service.ts::validate()` — transaction atomique": [
+      {
+        "executionId": "69d30321-eda9-4b90-8be9-ee0e744e2dfc",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793537585679
+      },
+      {
+        "executionId": "3c8c8f2f-6c14-4b95-b999-497f020141ae",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793541163714
+      },
+      {
+        "executionId": "3c8c8f2f-6c14-4b95-b999-497f020141ae",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793541935561
+      }
+    ],
+    "5.5 Ajouter `POST /inventory/:id/validate` dans `inventory.controller.ts`": [
+      {
+        "executionId": "69d30321-eda9-4b90-8be9-ee0e744e2dfc",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793537585757
+      },
+      {
+        "executionId": "3c8c8f2f-6c14-4b95-b999-497f020141ae",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793542394958
+      },
+      {
+        "executionId": "3c8c8f2f-6c14-4b95-b999-497f020141ae",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793544373765
+      }
+    ],
+    "5.6 Mettre à jour `mapSession()` dans `inventory.service.ts` — inclure `status`": [
+      {
+        "executionId": "69d30321-eda9-4b90-8be9-ee0e744e2dfc",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793537585785
+      },
+      {
+        "executionId": "3c8c8f2f-6c14-4b95-b999-497f020141ae",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793542399278
+      },
+      {
+        "executionId": "3c8c8f2f-6c14-4b95-b999-497f020141ae",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793544390745
+      }
+    ],
+    "5.7 Modifier `sales.service.ts::create()` — atomicité + costPriceAtSale": [
+      {
+        "executionId": "69d30321-eda9-4b90-8be9-ee0e744e2dfc",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793537585815
+      },
+      {
+        "executionId": "3c8c8f2f-6c14-4b95-b999-497f020141ae",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793542402626
+      },
+      {
+        "executionId": "3c8c8f2f-6c14-4b95-b999-497f020141ae",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793544405737
+      }
+    ],
+    "5.8 Mettre à jour `mapSale()` dans `sales.service.ts` — inclure `costPriceAtSale`": [
+      {
+        "executionId": "69d30321-eda9-4b90-8be9-ee0e744e2dfc",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793537585847
+      },
+      {
+        "executionId": "3c8c8f2f-6c14-4b95-b999-497f020141ae",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793542418450
+      },
+      {
+        "executionId": "3c8c8f2f-6c14-4b95-b999-497f020141ae",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793544410487
+      }
+    ],
+    "6. Checkpoint — Vérifier la migration et les services modifiés": [
+      {
+        "executionId": "69d30321-eda9-4b90-8be9-ee0e744e2dfc",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793537585905
+      },
+      {
+        "executionId": "3c8c8f2f-6c14-4b95-b999-497f020141ae",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793544428951
+      },
+      {
+        "executionId": "3c8c8f2f-6c14-4b95-b999-497f020141ae",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793545385343
+      }
+    ],
+    "7.1 Créer `backend/scripts/backup.sh`": [
+      {
+        "executionId": "69d30321-eda9-4b90-8be9-ee0e744e2dfc",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793537585935
+      },
+      {
+        "executionId": "69d30321-eda9-4b90-8be9-ee0e744e2dfc",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793537606321
+      },
+      {
+        "executionId": "69d30321-eda9-4b90-8be9-ee0e744e2dfc",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793538336492
+      }
+    ],
+    "7.2 Créer `backend/docs/backup-restore.md`": [
+      {
+        "executionId": "69d30321-eda9-4b90-8be9-ee0e744e2dfc",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793537585967
+      },
+      {
+        "executionId": "69d30321-eda9-4b90-8be9-ee0e744e2dfc",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793538358690
+      },
+      {
+        "executionId": "69d30321-eda9-4b90-8be9-ee0e744e2dfc",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793539241296
+      }
+    ],
+    "7.3 Ajouter `backend/backups/` dans `.gitignore` à la racine du projet": [
+      {
+        "executionId": "69d30321-eda9-4b90-8be9-ee0e744e2dfc",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793537585997
+      },
+      {
+        "executionId": "69d30321-eda9-4b90-8be9-ee0e744e2dfc",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793539268778
+      },
+      {
+        "executionId": "3c8c8f2f-6c14-4b95-b999-497f020141ae",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793541064767
+      }
+    ],
+    "8.1 Créer `backend/src/health/health.controller.ts`": [
+      {
+        "executionId": "69d30321-eda9-4b90-8be9-ee0e744e2dfc",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793537586037
+      },
+      {
+        "executionId": "69d30321-eda9-4b90-8be9-ee0e744e2dfc",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793537609409
+      },
+      {
+        "executionId": "69d30321-eda9-4b90-8be9-ee0e744e2dfc",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793538339592
+      }
+    ],
+    "8.2 Vérifier / ajouter `resolveJsonModule: true` dans `backend/tsconfig.json`": [
+      {
+        "executionId": "69d30321-eda9-4b90-8be9-ee0e744e2dfc",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793537586084
+      },
+      {
+        "executionId": "69d30321-eda9-4b90-8be9-ee0e744e2dfc",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793538361730
+      },
+      {
+        "executionId": "69d30321-eda9-4b90-8be9-ee0e744e2dfc",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793539248463
+      }
+    ],
+    "8.3 Créer `backend/src/health/health.module.ts` et l'importer dans `app.module.ts`": [
+      {
+        "executionId": "69d30321-eda9-4b90-8be9-ee0e744e2dfc",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793537586115
+      },
+      {
+        "executionId": "69d30321-eda9-4b90-8be9-ee0e744e2dfc",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793539274634
+      },
+      {
+        "executionId": "3c8c8f2f-6c14-4b95-b999-497f020141ae",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793541070328
+      }
+    ],
+    "9.1 Créer `backend/src/common/logger/json-logger.service.ts`": [
+      {
+        "executionId": "69d30321-eda9-4b90-8be9-ee0e744e2dfc",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793537586147
+      },
+      {
+        "executionId": "69d30321-eda9-4b90-8be9-ee0e744e2dfc",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793537612619
+      },
+      {
+        "executionId": "69d30321-eda9-4b90-8be9-ee0e744e2dfc",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793538342539
+      }
+    ],
+    "9.2 Déclarer `JsonLoggerService` dans `main.ts`": [
+      {
+        "executionId": "69d30321-eda9-4b90-8be9-ee0e744e2dfc",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793537586180
+      },
+      {
+        "executionId": "69d30321-eda9-4b90-8be9-ee0e744e2dfc",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793538666763
+      },
+      {
+        "executionId": "69d30321-eda9-4b90-8be9-ee0e744e2dfc",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793539251935
+      }
+    ],
+    "9.3 Remplacer les `console.log()` et `console.error()` dans `backend/src/`": [
+      {
+        "executionId": "69d30321-eda9-4b90-8be9-ee0e744e2dfc",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793537586212
+      },
+      {
+        "executionId": "69d30321-eda9-4b90-8be9-ee0e744e2dfc",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793539279447
+      },
+      {
+        "executionId": "3c8c8f2f-6c14-4b95-b999-497f020141ae",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793539866255
+      },
+      {
+        "executionId": "3c8c8f2f-6c14-4b95-b999-497f020141ae",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793541076529
+      }
+    ],
+    "9.4 Créer `.github/workflows/ci.yml`": [
+      {
+        "executionId": "69d30321-eda9-4b90-8be9-ee0e744e2dfc",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793537586244
+      },
+      {
+        "executionId": "69d30321-eda9-4b90-8be9-ee0e744e2dfc",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793537615442
+      },
+      {
+        "executionId": "69d30321-eda9-4b90-8be9-ee0e744e2dfc",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793538345553
+      }
+    ],
+    "10. Checkpoint final — Vérifier l'ensemble": [
+      {
+        "executionId": "69d30321-eda9-4b90-8be9-ee0e744e2dfc",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793537586306
+      },
+      {
+        "executionId": "3c8c8f2f-6c14-4b95-b999-497f020141ae",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793545405636
+      },
+      {
+        "executionId": "3c8c8f2f-6c14-4b95-b999-497f020141ae",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793545590902
+      }
+    ],
+    "1. T1 — Protection de `/auth/setup`": [
+      {
+        "executionId": "69d30321-eda9-4b90-8be9-ee0e744e2dfc",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793538323788
+      }
+    ],
+    "7. T6 — Sauvegardes PostgreSQL": [
+      {
+        "executionId": "3c8c8f2f-6c14-4b95-b999-497f020141ae",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793541064805
+      }
+    ],
+    "8. T7 — HealthModule": [
+      {
+        "executionId": "3c8c8f2f-6c14-4b95-b999-497f020141ae",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793541070381
+      }
+    ],
+    "9. T8 — Logger NestJS + pipeline CI": [
+      {
+        "executionId": "3c8c8f2f-6c14-4b95-b999-497f020141ae",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793541076579
+      }
+    ],
+    "2. T2 — Trust proxy + Rate limiting IP réelle": [
+      {
+        "executionId": "3c8c8f2f-6c14-4b95-b999-497f020141ae",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793541141668
+      }
+    ],
+    "3. T3 — PdfService singleton + suppression TVA": [
+      {
+        "executionId": "3c8c8f2f-6c14-4b95-b999-497f020141ae",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793541920868
+      }
+    ],
+    "5. T4 + T5 — Migration Prisma unique + Atomicité stock + Inventaire DRAFT/VALIDATED": [
+      {
+        "executionId": "3c8c8f2f-6c14-4b95-b999-497f020141ae",
+        "chatSessionId": "a11f647c-c346-48cb-ba1a-c97fd00c4dee",
+        "timestamp": 1793544410580
+      }
+    ]
+  }
+}

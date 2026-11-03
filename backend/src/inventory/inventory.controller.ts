@@ -41,4 +41,14 @@ export class InventoryController {
   ) {
     return this.inventoryService.create(user.tenantId, user.sub, dto);
   }
+
+  @Post(':id/validate')
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  @ApiOperation({ summary: "Valider une session d'inventaire DRAFT et appliquer les écarts de stock" })
+  validate(
+    @CurrentUser() user: CurrentUserData,
+    @Param('id') id: string,
+  ) {
+    return this.inventoryService.validate(user.tenantId, user.sub, id);
+  }
 }

@@ -1,9 +1,11 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
 
 @Injectable()
 export class MailService implements OnModuleInit {
+  private readonly logger = new Logger(MailService.name);
+
   private transporter: nodemailer.Transporter;
   private isEthereal = false;
 
@@ -20,8 +22,11 @@ export class MailService implements OnModuleInit {
 
     if (isDev && (!smtpHost || smtpUser === 'votre@email.com' || smtpHost === 'smtp.gmail.com')) {
       try {
-        console.log('Generating Ethereal Email test account...');
-        const testAccount = await nodemailer.createTestAccount();
+        this.logger.log('Tentative de connexion Ethereal Email...');
+        const testAccount = await Promise.race([
+          nodemailer.createTestAccount(),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000)),
+        ]) as any;
         this.transporter = nodemailer.createTransport({
           host: testAccount.smtp.host,
           port: testAccount.smtp.port,
@@ -32,12 +37,11 @@ export class MailService implements OnModuleInit {
           },
         });
         this.isEthereal = true;
-        console.log(`Ethereal Email transporter initialized. User: ${testAccount.user}`);
+        this.logger.log(`✅ Ethereal Email prêt. Compte: ${testAccount.user}`);
       } catch (err) {
-        console.error('Failed to create Ethereal Email account, falling back to dummy JSON transporter:', err);
-        this.transporter = nodemailer.createTransport({
-          jsonTransport: true,
-        });
+        // Pas d'internet ou timeout — on affiche les emails dans la console (mode dev sans réseau)
+        this.logger.warn('⚠️  Ethereal Email non disponible (pas de réseau). Les emails seront affichés dans la console.');
+        this.transporter = nodemailer.createTransport({ jsonTransport: true });
       }
     } else {
       this.transporter = nodemailer.createTransport({
@@ -49,7 +53,7 @@ export class MailService implements OnModuleInit {
           pass: this.configService.get<string>('SMTP_PASS'),
         },
       });
-      console.log('SMTP email transporter initialized.');
+      this.logger.log('SMTP email transporter initialized.');
     }
   }
 
@@ -69,12 +73,20 @@ export class MailService implements OnModuleInit {
     if (this.isEthereal) {
       const previewUrl = nodemailer.getTestMessageUrl(info);
       if (previewUrl) {
-        console.log('\n==================================================');
-        console.log(`[EMAIL SENT] To: ${to}`);
-        console.log(`Subject: ${subject}`);
-        console.log(`Preview URL: ${previewUrl}`);
-        console.log('==================================================\n');
+        this.logger.log('==================================================');
+        this.logger.log(`[EMAIL SENT] To: ${to}`);
+        this.logger.log(`Subject: ${subject}`);
+        this.logger.log(`Preview URL: ${previewUrl}`);
+        this.logger.log('==================================================');
       }
+    } else {
+      // Mode console (pas de réseau Ethereal, pas de SMTP configuré)
+      this.logger.log('══════════════ EMAIL (MODE DEV - CONSOLE) ══════════════');
+      this.logger.log(`📧 À        : ${to}`);
+      this.logger.log(`📌 Sujet    : ${subject}`);
+      this.logger.log(`📝 Contenu  : ${html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 300)}...`);
+      this.logger.log('═══════════════════════════════════════════════════════');
+      this.logger.log('💡 Pour recevoir de vrais emails, configurez SMTP dans backend/.env');
     }
 
     return info;

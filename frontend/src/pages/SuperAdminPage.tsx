@@ -47,6 +47,7 @@ import {
   Visibility as ViewIcon,
   People as UsersIcon,
   Receipt as ReceiptIcon,
+  LockReset as ResetPwdIcon,
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { superAdminService } from '../services';
@@ -86,6 +87,12 @@ export default function SuperAdminPage() {
 
   // Formulaire Blocage
   const [blockReason, setBlockReason] = useState('');
+
+  // Reset mot de passe utilisateur (Super-Admin)
+  const [resetPwdDialogOpen, setResetPwdDialogOpen] = useState(false);
+  const [resetPwdUser, setResetPwdUser] = useState<{ id: string; email: string } | null>(null);
+  const [resetPwdValue, setResetPwdValue] = useState('');
+  const [resetPwdError, setResetPwdError] = useState('');
 
   // ─── Requêtes API ────────────────────────────────────────────────────────
   const { data: stats, isLoading: statsLoading, refetch: refetchStats } = useQuery({
@@ -144,6 +151,20 @@ export default function SuperAdminPage() {
         amount: 40,
         paymentMethod: 'CASH',
       });
+    },
+  });
+
+  const resetPwdMutation = useMutation({
+    mutationFn: ({ userId, newPassword }: { userId: string; newPassword: string }) =>
+      superAdminService.resetUserPassword(viewTenantId!, userId, newPassword),
+    onSuccess: () => {
+      setResetPwdDialogOpen(false);
+      setResetPwdUser(null);
+      setResetPwdValue('');
+      setResetPwdError('');
+    },
+    onError: (err: any) => {
+      setResetPwdError(err?.response?.data?.message || 'Erreur lors de la reinitialisation.');
     },
   });
 
@@ -887,6 +908,7 @@ export default function SuperAdminPage() {
                         <TableCell sx={{ fontWeight: 700 }}>Rôle</TableCell>
                         <TableCell sx={{ fontWeight: 700 }}>Statut</TableCell>
                         <TableCell sx={{ fontWeight: 700 }}>Créé le</TableCell>
+                        <TableCell sx={{ fontWeight: 700 }}>Actions</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
@@ -930,6 +952,22 @@ export default function SuperAdminPage() {
                               <Typography variant="caption" color="text.secondary">
                                 {new Date(u.createdAt).toLocaleDateString('fr-FR')}
                               </Typography>
+                            </TableCell>
+                            <TableCell>
+                              <Tooltip title="Réinitialiser le mot de passe">
+                                <IconButton
+                                  size="small"
+                                  color="warning"
+                                  onClick={() => {
+                                    setResetPwdUser({ id: u.id, email: u.email });
+                                    setResetPwdValue('');
+                                    setResetPwdError('');
+                                    setResetPwdDialogOpen(true);
+                                  }}
+                                >
+                                  <ResetPwdIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
                             </TableCell>
                           </TableRow>
                         ))
@@ -1006,6 +1044,55 @@ export default function SuperAdminPage() {
         <DialogActions sx={{ p: 2 }}>
           <Button onClick={() => setDetailsDialogOpen(false)} variant="contained">
             Fermer
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* ── Modale Reset Mot de Passe Utilisateur ──────────────────────── */}
+      <Dialog open={resetPwdDialogOpen} onClose={() => { setResetPwdDialogOpen(false); resetPwdMutation.reset(); }} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}>
+          <ResetPwdIcon color="warning" />
+          Réinitialiser le mot de passe
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Utilisateur : <strong>{resetPwdUser?.email}</strong>
+          </Typography>
+          {resetPwdError && (
+            <Alert severity="error" sx={{ mb: 2 }}>{resetPwdError}</Alert>
+          )}
+          {resetPwdMutation.isSuccess && (
+            <Alert severity="success" sx={{ mb: 2 }}>Mot de passe réinitialisé avec succès !</Alert>
+          )}
+          <TextField
+            label="Nouveau mot de passe"
+            type="password"
+            fullWidth
+            value={resetPwdValue}
+            onChange={(e) => setResetPwdValue(e.target.value)}
+            helperText="Minimum 8 caractères"
+            error={resetPwdValue.length > 0 && resetPwdValue.length < 8}
+            autoFocus
+          />
+        </DialogContent>
+        <DialogActions sx={{ p: 2, gap: 1 }}>
+          <Button onClick={() => { setResetPwdDialogOpen(false); resetPwdMutation.reset(); }} variant="outlined" disabled={resetPwdMutation.isPending}>
+            Annuler
+          </Button>
+          <Button
+            onClick={() => {
+              if (resetPwdValue.length < 8) {
+                setResetPwdError('Le mot de passe doit comporter au moins 8 caractères.');
+                return;
+              }
+              resetPwdMutation.mutate({ userId: resetPwdUser!.id, newPassword: resetPwdValue });
+            }}
+            variant="contained"
+            color="warning"
+            disabled={resetPwdMutation.isPending || resetPwdValue.length < 8}
+            startIcon={resetPwdMutation.isPending ? <CircularProgress size={16} /> : <ResetPwdIcon />}
+          >
+            {resetPwdMutation.isPending ? 'Enregistrement...' : 'Réinitialiser'}
           </Button>
         </DialogActions>
       </Dialog>

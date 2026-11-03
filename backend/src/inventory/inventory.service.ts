@@ -13,6 +13,7 @@ function mapSession(session: any) {
     tenantId: session.tenantId,
     date: session.date,
     notes: session.notes,
+    status: session.status,
     createdBy: session.createdBy,
     createdAt: session.createdAt,
     items: session.items?.map((item: any) => ({
@@ -103,39 +104,28 @@ export class InventoryService {
       });
     }
 
-    // Transaction: créer la session + corriger les stocks
-    const session = await this.prisma.$transaction(async (tx) => {
-      const newSession = await tx.inventorySession.create({
-        data: {
-          tenantId,
-          notes: dto.notes ?? null,
-          createdBy: userId,
-          items: {
-            create: productData.map((d) => ({
-              productId: d.productId,
-              qtySystem: d.qtySystem,
-              qtyPhysical: d.qtyPhysical,
-              difference: d.difference,
-              comment: d.comment ?? null,
-            })),
-          },
+    // Créer la session d'inventaire au statut DRAFT (sans modifier les stocks)
+    const session = await this.prisma.inventorySession.create({
+      data: {
+        tenantId,
+        notes: dto.notes ?? null,
+        status: 'DRAFT',
+        createdBy: userId,
+        items: {
+          create: productData.map((d) => ({
+            productId: d.productId,
+            qtySystem: d.qtySystem,
+            qtyPhysical: d.qtyPhysical,
+            difference: d.difference,
+            comment: d.comment ?? null,
+          })),
         },
-        include: {
-          items: {
-            include: { product: { select: { name: true } } },
-          },
+      },
+      include: {
+        items: {
+          include: { product: { select: { name: true } } },
         },
-      });
-
-      // Mettre à jour les quantités produits
-      for (const d of productData) {
-        await tx.product.update({
-          where: { id: d.productId },
-          data: { qty: d.qtyPhysical },
-        });
-      }
-
-      return newSession;
+      },
     });
 
     await this.activityLogs.log(
@@ -148,5 +138,56 @@ export class InventoryService {
     );
 
     return mapSession(session);
+  }
+
+  // ─── POST /api/inventory/:id/validate ────────────────────────────────────────
+  async validate(tenantId: string, userId: string, id: string) {
+    const session = await this.prisma.inventorySession.findFirst({
+      where: { id, tenantId },
+      include: { items: true },
+    });
+
+    if (!session) throw new NotFoundException("Session d'inventaire non trouvée");
+    if (session.status === 'VALIDATED') {
+      throw new BadRequestException('Cette session a déjà été validée');
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      for (const item of session.items) {
+        if (item.difference === 0) continue;
+
+        // Vérifier que l'ajustement ne rendra pas qty négatif
+        const product = await tx.product.findFirst({
+          where: { id: item.productId },
+          select: { qty: true, name: true },
+        });
+        const newQty = (product?.qty ?? 0) + item.difference;
+        if (newQty < 0) {
+          throw new BadRequestException(
+            `L'ajustement pour "${product?.name}" résulterait en un stock négatif (${newQty})`,
+          );
+        }
+
+        await tx.product.update({
+          where: { id: item.productId },
+          data: { qty: { increment: item.difference } },
+        });
+      }
+
+      await tx.inventorySession.update({
+        where: { id },
+        data: { status: 'VALIDATED' },
+      });
+    });
+
+    await this.activityLogs.log(
+      tenantId,
+      userId,
+      'INVENTORY_VALIDATE',
+      'inventory_session',
+      id,
+    );
+
+    return this.findOne(tenantId, id);
   }
 }

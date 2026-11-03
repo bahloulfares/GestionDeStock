@@ -247,6 +247,7 @@ async function main() {
               productId: products[i.ref].id,
               qty: i.qty,
               priceSell: i.price,
+              costPriceAtSale: products[i.ref].priceBuy,
             })),
           },
         },

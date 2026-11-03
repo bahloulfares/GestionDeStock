@@ -5,6 +5,8 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ActivityLogsService } from '../activity-logs/activity-logs.service';
+import { PdfService } from '../pdf/pdf.service';
+import type { TDocumentDefinitions } from 'pdfmake/interfaces';
 import { CreateSaleDto, CancelSaleDto } from './dto/sale.dto';
 
 function mapSale(sale: any) {
@@ -27,6 +29,7 @@ function mapSale(sale: any) {
       productName: item.product?.name,
       qty: item.qty,
       priceSell: Number(item.priceSell),
+      costPriceAtSale: item.costPriceAtSale != null ? Number(item.costPriceAtSale).toFixed(3) : null,
     })),
   };
 }
@@ -36,6 +39,7 @@ export class SalesService {
   constructor(
     private prisma: PrismaService,
     private activityLogs: ActivityLogsService,
+    private readonly pdfService: PdfService,
   ) {}
 
   // ─── GET /api/sales ──────────────────────────────────────────────────────────
@@ -101,19 +105,23 @@ export class SalesService {
 
   // ─── POST /api/sales ─────────────────────────────────────────────────────────
   async create(tenantId: string, userId: string, dto: CreateSaleDto) {
-    // Vérifier les stocks pour chaque produit
+    // Lire name et priceBuy avant la transaction (la vérification du stock
+    // se fait dans l'UPDATE atomique, pas ici)
+    const productMap = new Map<string, { name: string; priceBuy: import('@prisma/client').Prisma.Decimal }>();
     for (const item of dto.items) {
       const product = await this.prisma.product.findFirst({
         where: { id: item.productId, tenantId, isActive: true },
+        select: { name: true, priceBuy: true },
       });
       if (!product) {
         throw new NotFoundException(`Produit ${item.productId} non trouvé`);
       }
-      if (product.qty < item.qty) {
+      if (product.priceBuy === null) {
         throw new BadRequestException(
-          `Stock insuffisant pour ${product.name}: disponible ${product.qty}, demandé ${item.qty}`,
+          `Le coût d'achat du produit "${product.name}" est manquant`,
         );
       }
+      productMap.set(item.productId, { name: product.name, priceBuy: product.priceBuy });
     }
 
     // Calculer le total
@@ -137,6 +145,7 @@ export class SalesService {
               productId: item.productId,
               qty: item.qty,
               priceSell: item.priceSell,
+              costPriceAtSale: productMap.get(item.productId)!.priceBuy,
             })),
           },
         },
@@ -148,12 +157,21 @@ export class SalesService {
         },
       });
 
-      // Décrémenter les stocks
+      // Décrémenter les stocks de manière atomique (vérification dans le WHERE)
       for (const item of dto.items) {
-        await tx.product.update({
-          where: { id: item.productId },
-          data: { qty: { decrement: item.qty } },
-        });
+        const affected = await tx.$executeRaw`
+          UPDATE products SET qty = qty - ${item.qty}
+          WHERE id = ${item.productId} AND tenant_id = ${tenantId} AND qty >= ${item.qty}
+        `;
+        if (affected === 0) {
+          const current = await tx.product.findFirst({
+            where: { id: item.productId },
+            select: { qty: true, name: true },
+          });
+          throw new BadRequestException(
+            `Stock insuffisant pour "${current?.name}": disponible ${current?.qty ?? 0}, demandé ${item.qty}`,
+          );
+        }
       }
 
       return newSale;
@@ -209,53 +227,64 @@ export class SalesService {
       include: {
         items: { include: { product: true } },
         tenant: true,
-      }
+      },
     });
     if (!sale) throw new NotFoundException('Vente non trouvée');
 
-    const fonts = {
-      Helvetica: {
-        normal: 'Helvetica',
-        bold: 'Helvetica-Bold',
-        italics: 'Helvetica-Oblique',
-        bolditalics: 'Helvetica-BoldOblique'
-      }
-    };
-    
-    const pdfmake = require('pdfmake');
-    pdfmake.setFonts(fonts);
-    
-    const docDefinition = {
+    // Construction du document : nom boutique, titre FACTURE, référence,
+    // date, règlement, tableau articles (désignation, qté, prix unitaire,
+    // montant) et total général. Document sans colonne fiscale.
+    const docDefinition: TDocumentDefinitions = {
       defaultStyle: { font: 'Helvetica' },
       content: [
-        { text: sale.tenant.name, fontSize: 20, bold: true, margin: [0, 0, 0, 5] },
-        { text: 'FACTURE', fontSize: 16, bold: true, alignment: 'right', margin: [0, -25, 0, 20] },
-        
+        {
+          text: sale.tenant.name,
+          fontSize: 20,
+          bold: true,
+          margin: [0, 0, 0, 5],
+        },
+        {
+          text: 'FACTURE',
+          fontSize: 16,
+          bold: true,
+          alignment: 'right',
+          margin: [0, -25, 0, 20],
+        },
+
         { text: `Réf : #${sale.id.slice(-8).toUpperCase()}`, margin: [0, 5, 0, 2] },
         { text: `Date : ${sale.date.toLocaleDateString()}`, margin: [0, 0, 0, 2] },
         { text: `Règlement : ${sale.paymentMethod}`, margin: [0, 0, 0, 20] },
-        
+
         {
           table: {
             headerRows: 1,
             widths: ['*', 'auto', 'auto', 'auto'],
             body: [
-              [{ text: 'Désignation', bold: true }, { text: 'Qté', bold: true }, { text: 'Prix Unitaire', bold: true }, { text: 'Montant', bold: true }],
-              ...sale.items.map(item => [
+              [
+                { text: 'Désignation', bold: true },
+                { text: 'Qté', bold: true },
+                { text: 'Prix Unitaire', bold: true },
+                { text: 'Montant', bold: true },
+              ],
+              ...sale.items.map((item) => [
                 item.product.name,
                 item.qty.toString(),
                 Number(item.priceSell).toFixed(3),
-                (item.qty * Number(item.priceSell)).toFixed(3)
+                (item.qty * Number(item.priceSell)).toFixed(3),
               ]),
-              [{ text: 'TOTAL (TND)', colSpan: 3, alignment: 'right', bold: true }, {}, {}, { text: Number(sale.total).toFixed(3), bold: true }]
-            ]
+              [
+                { text: 'TOTAL (TND)', colSpan: 3, alignment: 'right', bold: true },
+                {},
+                {},
+                { text: Number(sale.total).toFixed(3), bold: true },
+              ],
+            ],
           },
-          layout: 'lightHorizontalLines'
-        }
-      ]
+          layout: 'lightHorizontalLines',
+        },
+      ],
     };
 
-    const pdf = pdfmake.createPdf(docDefinition);
-    return pdf.getBuffer();
+    return await this.pdfService.generateBuffer(docDefinition);
   }
 }

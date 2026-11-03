@@ -4,6 +4,7 @@ import {
   UnauthorizedException,
   ForbiddenException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
@@ -18,6 +19,8 @@ const BCRYPT_ROUNDS = 12;
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
@@ -27,10 +30,13 @@ export class AuthService {
 
   // ─── Setup (Initialisation de l'application / Premier démarrage) ───────────
   async setup(dto: RegisterDto) {
-    const userCount = await this.prisma.user.count();
-    if (userCount > 0) {
-      // Si l'application a déjà des utilisateurs, rediriger vers register pour créer un nouveau tenant
-      return this.register(dto);
+    const superAdminCount = await this.prisma.user.count({
+      where: { role: 'SUPER_ADMIN' },
+    });
+    if (superAdminCount > 0) {
+      throw new ConflictException(
+        "L'application est déjà initialisée. Utilisez /auth/login pour vous connecter.",
+      );
     }
 
     const passwordHash = await bcrypt.hash(dto.password, BCRYPT_ROUNDS);
@@ -66,7 +72,7 @@ export class AuthService {
       return { tenant, user };
     });
 
-    console.log(`[SETUP] Application initialized successfully by Admin: ${dto.email}`);
+    this.logger.log(`[SETUP] Application initialized successfully by Admin: ${dto.email}`);
 
     return {
       message: 'Application configurée avec succès. Vous pouvez maintenant vous connecter.',
@@ -125,7 +131,7 @@ export class AuthService {
       return { tenant, user };
     });
 
-    console.log(`[REGISTER] New shop registered: ${dto.shopName} (${dto.email}) with 14-day trial`);
+    this.logger.log(`[REGISTER] New shop registered: ${dto.shopName} (${dto.email}) with 14-day trial`);
 
     return {
       message: 'Compte créé avec succès ! Vous bénéficiez de 14 jours d\'essai gratuit.',
@@ -252,7 +258,10 @@ export class AuthService {
         htmlContent,
       );
     } catch (error) {
-      console.error('Failed to send forgot password email:', error);
+      this.logger.error(
+        'Failed to send forgot password email',
+        error instanceof Error ? error.stack : String(error),
+      );
     }
 
     return {
@@ -288,7 +297,7 @@ export class AuthService {
       },
     });
 
-    console.log(`[AUTH] Password reset successfully for user: ${user.email}`);
+    this.logger.log(`[AUTH] Password reset successfully for user: ${user.email}`);
 
     return {
       message: 'Votre mot de passe a été modifié avec succès. Vous pouvez maintenant vous connecter.',

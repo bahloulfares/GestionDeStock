@@ -1,13 +1,20 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { Logger, ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
+import { JsonLoggerService } from './common/logger/json-logger.service';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  app.useLogger(new JsonLoggerService());
   const configService = app.get(ConfigService);
+
+  // ─── Trust proxy (production derrière Nginx) ──────────────────────────────
+  if (configService.get<string>('NODE_ENV') === 'production') {
+    app.getHttpAdapter().getInstance().set('trust proxy', 1);
+  }
 
   // ─── Préfixe API ──────────────────────────────────────────────────────────
   const apiPrefix = configService.get<string>('API_PREFIX', 'api');
@@ -86,9 +93,9 @@ async function bootstrap() {
   const port = configService.get<number>('PORT', 3000);
   await app.listen(port);
 
-  console.log(`\n🚀 StockTN API démarrée sur : http://localhost:${port}/${apiPrefix}`);
+  Logger.log(`🚀 StockTN API démarrée sur : http://localhost:${port}/${apiPrefix}`, 'Bootstrap');
   if (configService.get<string>('NODE_ENV') !== 'production') {
-    console.log(`📚 Swagger UI          : http://localhost:${port}/${apiPrefix}/docs`);
+    Logger.log(`📚 Swagger UI          : http://localhost:${port}/${apiPrefix}/docs`, 'Bootstrap');
   }
 }
 

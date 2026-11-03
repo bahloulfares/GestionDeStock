@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
-import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
 
 import { PrismaModule } from './prisma/prisma.module';
@@ -19,9 +19,13 @@ import { ActivityLogsModule } from './activity-logs/activity-logs.module';
 import { ReturnsModule } from './returns/returns.module';
 import { MailModule } from './mail/mail.module';
 import { SuperAdminModule } from './super-admin/super-admin.module';
+import { HealthModule } from './health/health.module';
+import { PdfModule } from './pdf/pdf.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 import { SubscriptionGuard } from './common/guards/subscription.guard';
+import { ThrottlerProxyGuard } from './common/guards/throttler-proxy.guard';
+import { ThrottlerExceptionFilter } from './common/filters/throttler-exception.filter';
 
 @Module({
   imports: [
@@ -60,12 +64,14 @@ import { SubscriptionGuard } from './common/guards/subscription.guard';
     ReturnsModule,
     MailModule,
     SuperAdminModule,
+    PdfModule,
+    HealthModule,
   ],
   providers: [
     // Guards globaux — appliqués sur toutes les routes
     {
       provide: APP_GUARD,
-      useClass: ThrottlerGuard,
+      useClass: ThrottlerProxyGuard,
     },
     {
       provide: APP_GUARD,
@@ -78,6 +84,12 @@ import { SubscriptionGuard } from './common/guards/subscription.guard';
     {
       provide: APP_GUARD,
       useClass: SubscriptionGuard,
+    },
+
+    // Filtre global — personnalise la réponse 429 du throttler (Retry-After + message FR)
+    {
+      provide: APP_FILTER,
+      useClass: ThrottlerExceptionFilter,
     },
   ],
 })

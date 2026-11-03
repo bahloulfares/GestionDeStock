@@ -60,6 +60,11 @@ enum PaymentMethod {
   CREDIT
 }
 
+enum InventoryStatus {
+  DRAFT
+  VALIDATED
+}
+
 // ─── TENANTS ─────────────────────────────────────────────────────────────────
 
 model Tenant {
@@ -180,7 +185,7 @@ model Product {
   categoryId String? @map("category_id")
   name       String
   reference  String?
-  priceBuy   Decimal @map("price_buy") @db.Decimal(10, 3)
+  priceBuy   Decimal? @map("price_buy") @db.Decimal(10, 3)
   priceSell  Decimal @map("price_sell") @db.Decimal(10, 3)
   qty        Int     @default(0)
   minStock   Int     @default(5) @map("min_stock")
@@ -289,6 +294,7 @@ model SaleItem {
   productId String  @map("product_id")
   qty       Int
   priceSell Decimal @map("price_sell") @db.Decimal(10, 3)
+  costPriceAtSale  Decimal? @map("cost_price_at_sale") @db.Decimal(10, 3)
 
   sale    Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
   product Product @relation(fields: [productId], references: [id])
@@ -302,10 +308,11 @@ model SaleItem {
 model InventorySession {
   id        String   @id @default(uuid())
   tenantId  String   @map("tenant_id")
-  date      DateTime @default(now())
+  date      DateTime        @default(now())
   notes     String?
-  createdBy String   @map("created_by")
-  createdAt DateTime @default(now()) @map("created_at")
+  status    InventoryStatus @default(DRAFT)
+  createdBy String          @map("created_by")
+  createdAt DateTime        @default(now()) @map("created_at")
 
   tenant        Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   createdByUser User            @relation(fields: [createdBy], references: [id])
