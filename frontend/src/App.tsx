@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { authStore } from './store/auth.store';
 import AppLayout from './components/layout/AppLayout';
@@ -56,7 +56,6 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={isAuth ? <Navigate to="/" replace /> : <LoginPage onLogin={() => setIsAuth(true)} />} />
-        <Route path="/setup" element={isAuth ? <Navigate to="/" replace /> : <SetupPage />} />
         <Route path="/register" element={isAuth ? <Navigate to="/" replace /> : <SetupPage />} />
         <Route path="/forgot-password" element={isAuth ? <Navigate to="/" replace /> : <ForgotPasswordPage />} />
         <Route path="/reset-password" element={isAuth ? <Navigate to="/" replace /> : <ResetPasswordPage />} />

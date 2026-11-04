@@ -33,61 +33,6 @@ export class AuthService {
     private mailService: MailService,
   ) {}
 
-  // ─── Setup (Initialisation de l'application / Premier démarrage) ───────────
-  async setup(dto: RegisterDto) {
-    const superAdminCount = await this.prisma.user.count({
-      where: { role: 'SUPER_ADMIN' },
-    });
-    if (superAdminCount > 0) {
-      throw new ConflictException(
-        "L'application est déjà initialisée. Utilisez /auth/login pour vous connecter.",
-      );
-    }
-
-    const passwordHash = await bcrypt.hash(dto.password, BCRYPT_ROUNDS);
-
-    // Si c'est le tout premier démarrage absolu : on crée le Super-Admin ou la première boutique
-    const oneYearFromNow = new Date();
-    oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
-
-    const result = await this.prisma.$transaction(async (tx) => {
-      const tenant = await tx.tenant.create({
-        data: {
-          name: dto.shopName,
-          email: dto.email,
-          phone: dto.phone,
-          plan: 'YEARLY',
-          status: 'ACTIVE',
-          subscriptionExpiresAt: oneYearFromNow,
-        },
-      });
-
-      const user = await tx.user.create({
-        data: {
-          tenantId: tenant.id,
-          email: dto.email,
-          passwordHash,
-          role: 'ADMIN',
-          isActive: true,
-          isVerified: true,
-          verifyToken: null,
-        },
-      });
-
-      return { tenant, user };
-    });
-
-    this.logger.log(
-      `[SETUP] Application initialized successfully by Admin: ${dto.email}`,
-    );
-
-    return {
-      message:
-        'Application configurée avec succès. Vous pouvez maintenant vous connecter.',
-      tenantId: result.tenant.id,
-    };
-  }
-
   // ─── Register (Nouvelle boutique cliente avec 14 jours d'essai gratuit) ────
   async register(dto: RegisterDto) {
     // Vérifier si un tenant avec cet email existe déjà

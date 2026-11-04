@@ -5,14 +5,16 @@
  * Variables requises : SUPER_ADMIN_EMAIL et SUPER_ADMIN_PASSWORD
  */
 import { PrismaClient } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
+import { Pool } from 'pg';
 import * as bcrypt from 'bcrypt';
 
-const prisma = new PrismaClient();
 const BCRYPT_ROUNDS = 12;
 
 async function main() {
-  const email = process.env.SUPER_ADMIN_EMAIL;
+  const email = process.env.SUPER_ADMIN_EMAIL?.trim().toLowerCase();
   const password = process.env.SUPER_ADMIN_PASSWORD;
+  const dbUrl = process.env.DATABASE_URL;
 
   if (!email || !password) {
     console.error('Variables manquantes : SUPER_ADMIN_EMAIL et SUPER_ADMIN_PASSWORD requis');
@@ -24,36 +26,49 @@ async function main() {
     process.exit(1);
   }
 
-  // Verifier si un SUPER_ADMIN avec cet email existe deja
-  const existing = await prisma.user.findFirst({
-    where: { email, role: 'SUPER_ADMIN' },
-  });
-
-  if (existing) {
-    console.error(`Un SUPER_ADMIN avec l'email ${email} existe deja`);
+  if (!dbUrl) {
+    console.error('DATABASE_URL non definie');
     process.exit(1);
   }
 
-  const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
+  // Configuration Prisma avec adaptateur pg (Prisma 7)
+  const pool = new Pool({ connectionString: dbUrl });
+  const adapter = new PrismaPg(pool);
+  const prisma = new PrismaClient({ adapter });
 
-  const user = await prisma.user.create({
-    data: {
-      tenantId: null,
-      email,
-      passwordHash,
-      role: 'SUPER_ADMIN',
-      isActive: true,
-      isVerified: true,
-    },
-  });
+  try {
+    // Verifier si un SUPER_ADMIN avec cet email existe deja
+    const existing = await prisma.user.findFirst({
+      where: { email, role: 'SUPER_ADMIN' },
+    });
 
-  console.log(`SUPER_ADMIN cree avec succes : ${user.email} (id: ${user.id})`);
-  process.exit(0);
-}
+    if (existing) {
+      console.error(`Un SUPER_ADMIN avec l'email ${email} existe deja`);
+      process.exit(1);
+    }
 
-main()
-  .catch((err) => {
+    const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
+
+    const user = await prisma.user.create({
+      data: {
+        tenantId: null,
+        email,
+        passwordHash,
+        role: 'SUPER_ADMIN',
+        isActive: true,
+        isVerified: true,
+      },
+    });
+
+    console.log(`SUPER_ADMIN cree avec succes : ${user.email} (id: ${user.id})`);
+    process.exit(0);
+  } catch (err: any) {
     console.error('Erreur :', err.message);
     process.exit(1);
-  })
-  .finally(() => prisma.$disconnect());
+  } finally {
+    await prisma.$disconnect();
+    await pool.end();
+  }
+}
+
+main();
