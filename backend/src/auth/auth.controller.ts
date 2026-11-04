@@ -18,19 +18,6 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Public()
-  @Post('setup')
-  @ApiOperation({
-    summary: "Configuration initiale — Premier démarrage de l'application",
-  })
-  @ApiResponse({
-    status: 201,
-    description: 'Application configurée avec succès',
-  })
-  setup(@Body() dto: RegisterDto) {
-    return this.authService.setup(dto);
-  }
-
-  @Public()
   @Post('register')
   @ApiOperation({
     summary: "Inscription d'une nouvelle boutique (Essai 14 jours gratuit)",

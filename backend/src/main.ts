@@ -13,7 +13,19 @@ async function bootstrap() {
 
   // ─── Trust proxy (production derrière Nginx) ──────────────────────────────
   if (configService.get<string>('NODE_ENV') === 'production') {
-    app.getHttpAdapter().getInstance().set('trust proxy', 1);
+    const trustProxyHopsStr = configService.get<string>('TRUST_PROXY_HOPS', '1');
+    const trustProxyHops = parseInt(trustProxyHopsStr, 10);
+    
+    if (isNaN(trustProxyHops) || trustProxyHops < 0) {
+      Logger.error(
+        `TRUST_PROXY_HOPS invalide : ${trustProxyHopsStr}. Valeur attendue : entier >= 0.`,
+        'Bootstrap',
+      );
+      process.exit(1);
+    }
+    
+    app.getHttpAdapter().getInstance().set('trust proxy', trustProxyHops);
+    Logger.log(`Trust proxy configure : ${trustProxyHops} saut(s)`, 'Bootstrap');
   }
 
   // ─── Préfixe API ──────────────────────────────────────────────────────────

@@ -36,6 +36,17 @@ Exemple : TRUST_PROXY_HOPS=2
 
 Documentation : docs/backup-restore.md
 
+
+## Creation d'un SUPER_ADMIN
+
+Sur une installation neuve, creer le premier SUPER_ADMIN :
+
+    export SUPER_ADMIN_EMAIL=admin@stocktn.tn
+    export SUPER_ADMIN_PASSWORD=VotreMotDePasse123
+    npm run create-super-admin
+
+Le SUPER_ADMIN n'a pas de boutique (tenantId NULL) et accede au panneau plateforme.
+Email unique garanti par index partiel PostgreSQL WHERE tenant_id IS NULL.
 ## Tests et build
 
     npm test
