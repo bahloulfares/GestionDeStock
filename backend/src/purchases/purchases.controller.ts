@@ -12,10 +12,18 @@ import {
   Res,
 } from '@nestjs/common';
 import { Response } from 'express';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBearerAuth,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { PurchasesService } from './purchases.service';
 import { CreatePurchaseOrderDto } from './dto/purchase.dto';
-import { CurrentUser, CurrentUserData } from '../common/decorators/current-user.decorator';
+import {
+  CurrentUser,
+  CurrentUserData,
+} from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 
 @ApiTags('Purchase Orders')
@@ -55,10 +63,7 @@ export class PurchasesController {
 
   @Get(':id')
   @ApiOperation({ summary: "Détail d'un bon de commande avec items" })
-  findOne(
-    @CurrentUser() user: CurrentUserData,
-    @Param('id') id: string,
-  ) {
+  findOne(@CurrentUser() user: CurrentUserData, @Param('id') id: string) {
     return this.purchasesService.findOne(user.tenantId, id);
   }
 
@@ -72,29 +77,22 @@ export class PurchasesController {
   }
 
   @Put(':id/validate')
-  @ApiOperation({ summary: 'Valider un BC DRAFT → met à jour les stocks (ADMIN)' })
-  validate(
-    @CurrentUser() user: CurrentUserData,
-    @Param('id') id: string,
-  ) {
+  @ApiOperation({
+    summary: 'Valider un BC DRAFT → met à jour les stocks (ADMIN)',
+  })
+  validate(@CurrentUser() user: CurrentUserData, @Param('id') id: string) {
     return this.purchasesService.validate(user.tenantId, user.sub, id);
   }
 
   @Put(':id/cancel')
   @ApiOperation({ summary: 'Annuler un BC (non VALIDATED) (ADMIN)' })
-  cancel(
-    @CurrentUser() user: CurrentUserData,
-    @Param('id') id: string,
-  ) {
+  cancel(@CurrentUser() user: CurrentUserData, @Param('id') id: string) {
     return this.purchasesService.cancel(user.tenantId, user.sub, id);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: 'Supprimer un BC DRAFT (ADMIN)' })
-  remove(
-    @CurrentUser() user: CurrentUserData,
-    @Param('id') id: string,
-  ) {
+  remove(@CurrentUser() user: CurrentUserData, @Param('id') id: string) {
     return this.purchasesService.remove(user.tenantId, user.sub, id);
   }
 
@@ -105,9 +103,15 @@ export class PurchasesController {
     @Param('id') id: string,
     @Res() res: Response,
   ) {
-    const buffer = await this.purchasesService.generateOrderPdf(user.tenantId, id);
+    const buffer = await this.purchasesService.generateOrderPdf(
+      user.tenantId,
+      id,
+    );
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="commande-${id.slice(-8)}.pdf"`);
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="commande-${id.slice(-8)}.pdf"`,
+    );
     res.send(buffer);
   }
 }

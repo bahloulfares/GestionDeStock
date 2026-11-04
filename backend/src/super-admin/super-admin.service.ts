@@ -24,31 +24,27 @@ export class SuperAdminService {
     const sevenDaysFromNow = new Date();
     sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
 
-    const [
-      totalTenants,
-      allTenants,
-      totalPayments,
-      recentPayments,
-    ] = await Promise.all([
-      this.prisma.tenant.count(),
-      this.prisma.tenant.findMany({
-        select: {
-          id: true,
-          status: true,
-          isBlocked: true,
-          subscriptionExpiresAt: true,
-        },
-      }),
-      this.prisma.tenantPayment.aggregate({
-        _sum: { amount: true },
-        _count: { id: true },
-      }),
-      this.prisma.tenantPayment.findMany({
-        take: 5,
-        orderBy: { createdAt: 'desc' },
-        include: { tenant: { select: { id: true, name: true } } },
-      }),
-    ]);
+    const [totalTenants, allTenants, totalPayments, recentPayments] =
+      await Promise.all([
+        this.prisma.tenant.count(),
+        this.prisma.tenant.findMany({
+          select: {
+            id: true,
+            status: true,
+            isBlocked: true,
+            subscriptionExpiresAt: true,
+          },
+        }),
+        this.prisma.tenantPayment.aggregate({
+          _sum: { amount: true },
+          _count: { id: true },
+        }),
+        this.prisma.tenantPayment.findMany({
+          take: 5,
+          orderBy: { createdAt: 'desc' },
+          include: { tenant: { select: { id: true, name: true } } },
+        }),
+      ]);
 
     let activeCount = 0;
     let trialCount = 0;
@@ -97,7 +93,12 @@ export class SuperAdminService {
   }
 
   // ─── Liste de tous les clients (boutiques) ────────────────────────────────
-  async findAllTenants(search?: string, statusFilter?: string, page = 1, limit = 20) {
+  async findAllTenants(
+    search?: string,
+    statusFilter?: string,
+    page = 1,
+    limit = 20,
+  ) {
     const where: any = {};
 
     if (search) {
@@ -152,8 +153,13 @@ export class SuperAdminService {
     const items = tenants.map((t) => {
       const exp = new Date(t.subscriptionExpiresAt);
       const isExpired = exp < now;
-      const daysLeft = Math.ceil((exp.getTime() - now.getTime()) / (1000 * 3600 * 24));
-      const totalPaid = t.payments.reduce((acc, p) => acc + Number(p.amount), 0);
+      const daysLeft = Math.ceil(
+        (exp.getTime() - now.getTime()) / (1000 * 3600 * 24),
+      );
+      const totalPaid = t.payments.reduce(
+        (acc, p) => acc + Number(p.amount),
+        0,
+      );
 
       let computedStatus: string = t.status;
       if (t.isBlocked) {
@@ -231,7 +237,9 @@ export class SuperAdminService {
     const now = new Date();
     const exp = new Date(tenant.subscriptionExpiresAt);
     const isExpired = exp < now;
-    const daysLeft = Math.ceil((exp.getTime() - now.getTime()) / (1000 * 3600 * 24));
+    const daysLeft = Math.ceil(
+      (exp.getTime() - now.getTime()) / (1000 * 3600 * 24),
+    );
 
     return {
       id: tenant.id,
@@ -239,7 +247,11 @@ export class SuperAdminService {
       email: tenant.email,
       phone: tenant.phone,
       plan: tenant.plan,
-      status: tenant.isBlocked ? 'SUSPENDED' : isExpired ? 'EXPIRED' : tenant.status,
+      status: tenant.isBlocked
+        ? 'SUSPENDED'
+        : isExpired
+          ? 'EXPIRED'
+          : tenant.status,
       isBlocked: tenant.isBlocked,
       blockReason: tenant.blockReason,
       subscriptionExpiresAt: tenant.subscriptionExpiresAt,
@@ -407,14 +419,16 @@ export class SuperAdminService {
       where: { id: tenantId },
       data: {
         isBlocked: dto.isBlocked,
-        blockReason: dto.isBlocked ? dto.blockReason || 'Suspendu par le propriétaire' : null,
+        blockReason: dto.isBlocked
+          ? dto.blockReason || 'Suspendu par le propriétaire'
+          : null,
         status: dto.isBlocked ? 'SUSPENDED' : 'ACTIVE',
       },
     });
 
     return {
       message: dto.isBlocked
-        ? 'La boutique a été suspendue. L\'accès est désormais bloqué pour tous ses utilisateurs.'
+        ? "La boutique a été suspendue. L'accès est désormais bloqué pour tous ses utilisateurs."
         : 'La boutique a été réactivée avec succès.',
       tenantId: updated.id,
       isBlocked: updated.isBlocked,
@@ -441,14 +455,20 @@ export class SuperAdminService {
     const now = new Date();
     const exp = new Date(tenant.subscriptionExpiresAt);
     const isExpired = exp < now;
-    const daysLeft = Math.ceil((exp.getTime() - now.getTime()) / (1000 * 3600 * 24));
+    const daysLeft = Math.ceil(
+      (exp.getTime() - now.getTime()) / (1000 * 3600 * 24),
+    );
 
     return {
       shopName: tenant.name,
       email: tenant.email,
       phone: tenant.phone,
       plan: tenant.plan,
-      status: tenant.isBlocked ? 'SUSPENDED' : isExpired ? 'EXPIRED' : tenant.status,
+      status: tenant.isBlocked
+        ? 'SUSPENDED'
+        : isExpired
+          ? 'EXPIRED'
+          : tenant.status,
       isBlocked: tenant.isBlocked,
       blockReason: tenant.blockReason,
       expiresAt: tenant.subscriptionExpiresAt,
@@ -473,12 +493,18 @@ export class SuperAdminService {
     };
   }
 
-  async resetUserPassword(tenantId: string, userId: string, newPassword: string) {
+  async resetUserPassword(
+    tenantId: string,
+    userId: string,
+    newPassword: string,
+  ) {
     const user = await this.prisma.user.findFirst({
       where: { id: userId, tenantId },
     });
     if (!user) {
-      throw new NotFoundException('Utilisateur introuvable dans cette boutique.');
+      throw new NotFoundException(
+        'Utilisateur introuvable dans cette boutique.',
+      );
     }
     const passwordHash = await bcrypt.hash(newPassword, 12);
     await this.prisma.user.update({
@@ -496,5 +522,4 @@ export class SuperAdminService {
     }
     return { message: 'Mot de passe réinitialisé avec succès.' };
   }
-
 }

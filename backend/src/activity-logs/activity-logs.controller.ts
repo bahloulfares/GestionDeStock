@@ -8,7 +8,10 @@ import {
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { UserRole } from '@prisma/client';
 import { ActivityLogsService } from './activity-logs.service';
-import { CurrentUser, CurrentUserData } from '../common/decorators/current-user.decorator';
+import {
+  CurrentUser,
+  CurrentUserData,
+} from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 
 @ApiTags('Activity Logs')
@@ -19,7 +22,7 @@ export class ActivityLogsController {
 
   @Get()
   @Roles(UserRole.ADMIN)
-  @ApiOperation({ summary: 'Liste paginée des logs d\'activité du tenant' })
+  @ApiOperation({ summary: "Liste paginée des logs d'activité du tenant" })
   findAll(
     @CurrentUser() user: CurrentUserData,
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,

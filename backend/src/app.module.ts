@@ -38,8 +38,8 @@ import { ThrottlerExceptionFilter } from './common/filters/throttler-exception.f
     // ─── Rate Limiting ───────────────────────────────────────────────────────
     ThrottlerModule.forRoot([
       {
-        ttl: 60000,   // 1 minute
-        limit: 100,   // 100 requêtes par minute par défaut
+        ttl: 60000, // 1 minute
+        limit: 100, // 100 requêtes par minute par défaut
       },
     ]),
 

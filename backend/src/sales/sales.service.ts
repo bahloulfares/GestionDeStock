@@ -29,7 +29,10 @@ function mapSale(sale: any) {
       productName: item.product?.name,
       qty: item.qty,
       priceSell: Number(item.priceSell),
-      costPriceAtSale: item.costPriceAtSale != null ? Number(item.costPriceAtSale).toFixed(3) : null,
+      costPriceAtSale:
+        item.costPriceAtSale != null
+          ? Number(item.costPriceAtSale).toFixed(3)
+          : null,
     })),
   };
 }
@@ -107,7 +110,10 @@ export class SalesService {
   async create(tenantId: string, userId: string, dto: CreateSaleDto) {
     // Lire name et priceBuy avant la transaction (la vérification du stock
     // se fait dans l'UPDATE atomique, pas ici)
-    const productMap = new Map<string, { name: string; priceBuy: import('@prisma/client').Prisma.Decimal }>();
+    const productMap = new Map<
+      string,
+      { name: string; priceBuy: import('@prisma/client').Prisma.Decimal }
+    >();
     for (const item of dto.items) {
       const product = await this.prisma.product.findFirst({
         where: { id: item.productId, tenantId, isActive: true },
@@ -121,7 +127,10 @@ export class SalesService {
           `Le coût d'achat du produit "${product.name}" est manquant`,
         );
       }
-      productMap.set(item.productId, { name: product.name, priceBuy: product.priceBuy });
+      productMap.set(item.productId, {
+        name: product.name,
+        priceBuy: product.priceBuy,
+      });
     }
 
     // Calculer le total
@@ -183,7 +192,12 @@ export class SalesService {
   }
 
   // ─── POST /api/sales/:id/cancel ──────────────────────────────────────────────
-  async cancel(tenantId: string, userId: string, id: string, dto: CancelSaleDto) {
+  async cancel(
+    tenantId: string,
+    userId: string,
+    id: string,
+    dto: CancelSaleDto,
+  ) {
     const sale = await this.prisma.sale.findFirst({
       where: { id, tenantId },
       include: { items: true },
@@ -251,8 +265,14 @@ export class SalesService {
           margin: [0, -25, 0, 20],
         },
 
-        { text: `Réf : #${sale.id.slice(-8).toUpperCase()}`, margin: [0, 5, 0, 2] },
-        { text: `Date : ${sale.date.toLocaleDateString()}`, margin: [0, 0, 0, 2] },
+        {
+          text: `Réf : #${sale.id.slice(-8).toUpperCase()}`,
+          margin: [0, 5, 0, 2],
+        },
+        {
+          text: `Date : ${sale.date.toLocaleDateString()}`,
+          margin: [0, 0, 0, 2],
+        },
         { text: `Règlement : ${sale.paymentMethod}`, margin: [0, 0, 0, 20] },
 
         {
@@ -273,7 +293,12 @@ export class SalesService {
                 (item.qty * Number(item.priceSell)).toFixed(3),
               ]),
               [
-                { text: 'TOTAL (TND)', colSpan: 3, alignment: 'right', bold: true },
+                {
+                  text: 'TOTAL (TND)',
+                  colSpan: 3,
+                  alignment: 'right',
+                  bold: true,
+                },
                 {},
                 {},
                 { text: Number(sale.total).toFixed(3), bold: true },

@@ -36,7 +36,10 @@ export class CreateTenantByAdminDto {
   @MinLength(8)
   adminPassword: string;
 
-  @ApiProperty({ example: 'MONTHLY', enum: ['MONTHLY', 'YEARLY', 'TRIAL', 'LIFETIME'] })
+  @ApiProperty({
+    example: 'MONTHLY',
+    enum: ['MONTHLY', 'YEARLY', 'TRIAL', 'LIFETIME'],
+  })
   @IsIn(['MONTHLY', 'YEARLY', 'TRIAL', 'LIFETIME'])
   plan: 'MONTHLY' | 'YEARLY' | 'TRIAL' | 'LIFETIME';
 
@@ -50,14 +53,20 @@ export class CreateTenantByAdminDto {
   @IsNumber()
   amount?: number;
 
-  @ApiPropertyOptional({ example: 'CASH', description: 'CASH, D17, TRANSFER, CHEQUE' })
+  @ApiPropertyOptional({
+    example: 'CASH',
+    description: 'CASH, D17, TRANSFER, CHEQUE',
+  })
   @IsOptional()
   @IsString()
   paymentMethod?: string;
 }
 
 export class RenewSubscriptionDto {
-  @ApiProperty({ example: 1, description: 'Nombre de mois à ajouter (1 pour mois, 12 pour an)' })
+  @ApiProperty({
+    example: 1,
+    description: 'Nombre de mois à ajouter (1 pour mois, 12 pour an)',
+  })
   @IsNumber()
   @Min(1)
   durationMonths: number;
@@ -67,7 +76,10 @@ export class RenewSubscriptionDto {
   @Min(0)
   amount: number;
 
-  @ApiProperty({ example: 'CASH', description: 'Moyen de paiement (CASH, D17, VIREMENT, CHEQUE)' })
+  @ApiProperty({
+    example: 'CASH',
+    description: 'Moyen de paiement (CASH, D17, VIREMENT, CHEQUE)',
+  })
   @IsString()
   paymentMethod: string;
 
@@ -78,7 +90,10 @@ export class RenewSubscriptionDto {
 }
 
 export class ToggleBlockTenantDto {
-  @ApiProperty({ example: true, description: 'Bloquer (true) ou débloquer (false)' })
+  @ApiProperty({
+    example: true,
+    description: 'Bloquer (true) ou débloquer (false)',
+  })
   @IsBoolean()
   isBlocked: boolean;
 
@@ -89,7 +104,10 @@ export class ToggleBlockTenantDto {
 }
 
 export class ResetUserPasswordDto {
-  @ApiProperty({ example: 'NouveauMotDePasse123!', description: 'Nouveau mot de passe (min 8 caracteres)' })
+  @ApiProperty({
+    example: 'NouveauMotDePasse123!',
+    description: 'Nouveau mot de passe (min 8 caracteres)',
+  })
   @IsString()
   @MinLength(8)
   newPassword: string;

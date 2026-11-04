@@ -41,7 +41,9 @@ export class SubscriptionGuard implements CanActivate {
     }
 
     if (!user.tenantId) {
-      throw new ForbiddenException('Aucune boutique associée à cet utilisateur');
+      throw new ForbiddenException(
+        'Aucune boutique associée à cet utilisateur',
+      );
     }
 
     // Récupérer les informations du tenant

@@ -1,16 +1,12 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Put,
-  Body,
-  Param,
-} from '@nestjs/common';
+import { Controller, Get, Post, Put, Body, Param } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { CurrentUser, CurrentUserData } from '../common/decorators/current-user.decorator';
+import {
+  CurrentUser,
+  CurrentUserData,
+} from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 
 @ApiTags('Users')
@@ -28,10 +24,7 @@ export class UsersController {
 
   @Post()
   @ApiOperation({ summary: 'Créer un employé (ADMIN)' })
-  create(
-    @CurrentUser() user: CurrentUserData,
-    @Body() dto: CreateUserDto,
-  ) {
+  create(@CurrentUser() user: CurrentUserData, @Body() dto: CreateUserDto) {
     return this.usersService.create(user.tenantId, dto);
   }
 

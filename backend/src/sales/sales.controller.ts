@@ -10,10 +10,18 @@ import {
   Res,
 } from '@nestjs/common';
 import { Response } from 'express';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBearerAuth,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { SalesService } from './sales.service';
 import { CreateSaleDto, CancelSaleDto } from './dto/sale.dto';
-import { CurrentUser, CurrentUserData } from '../common/decorators/current-user.decorator';
+import {
+  CurrentUser,
+  CurrentUserData,
+} from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 
 @ApiTags('Sales')
@@ -52,19 +60,13 @@ export class SalesController {
 
   @Get(':id')
   @ApiOperation({ summary: "Détail d'une vente avec items" })
-  findOne(
-    @CurrentUser() user: CurrentUserData,
-    @Param('id') id: string,
-  ) {
+  findOne(@CurrentUser() user: CurrentUserData, @Param('id') id: string) {
     return this.salesService.findOne(user.tenantId, id);
   }
 
   @Post()
   @ApiOperation({ summary: 'Créer une vente (ADMIN + EMPLOYEE)' })
-  create(
-    @CurrentUser() user: CurrentUserData,
-    @Body() dto: CreateSaleDto,
-  ) {
+  create(@CurrentUser() user: CurrentUserData, @Body() dto: CreateSaleDto) {
     return this.salesService.create(user.tenantId, user.sub, dto);
   }
 
@@ -86,9 +88,15 @@ export class SalesController {
     @Param('id') id: string,
     @Res() res: Response,
   ) {
-    const buffer = await this.salesService.generateInvoicePdf(user.tenantId, id);
+    const buffer = await this.salesService.generateInvoicePdf(
+      user.tenantId,
+      id,
+    );
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="facture-${id.slice(-8)}.pdf"`);
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="facture-${id.slice(-8)}.pdf"`,
+    );
     res.send(buffer);
   }
 }

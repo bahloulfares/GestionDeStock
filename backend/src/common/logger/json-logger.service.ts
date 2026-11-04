@@ -47,7 +47,9 @@ export class JsonLoggerService implements LoggerService {
       );
     } else {
       const ctx = context ? ` [${context}]` : '';
-      process.stderr.write(`[NestJS]${ctx} ERROR ${String(message)}${trace ? `\n${trace}` : ''}\n`);
+      process.stderr.write(
+        `[NestJS]${ctx} ERROR ${String(message)}${trace ? `\n${trace}` : ''}\n`,
+      );
     }
   }
 

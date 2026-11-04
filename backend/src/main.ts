@@ -39,7 +39,7 @@ async function bootstrap() {
   const corsOrigins = configService
     .get<string>('CORS_ORIGINS', 'http://localhost:5173')
     .split(',')
-    .map(o => o.trim());
+    .map((o) => o.trim());
 
   app.enableCors({
     origin: corsOrigins,
@@ -64,7 +64,9 @@ async function bootstrap() {
   if (configService.get<string>('NODE_ENV') !== 'production') {
     const swaggerConfig = new DocumentBuilder()
       .setTitle('StockTN API')
-      .setDescription('API SaaS Gestion de Stocks — Boutiques Accessoires Téléphones Tunisie')
+      .setDescription(
+        'API SaaS Gestion de Stocks — Boutiques Accessoires Téléphones Tunisie',
+      )
       .setVersion('1.0')
       .addBearerAuth(
         { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
@@ -80,7 +82,7 @@ async function bootstrap() {
       .addTag('Reports', 'Rapports et statistiques')
       .addTag('Inventory', 'Inventaire physique')
       .addTag('Users', 'Gestion des utilisateurs')
-      .addTag('Activity Logs', 'Journaux d\'activité')
+      .addTag('Activity Logs', "Journaux d'activité")
       .build();
 
     const document = SwaggerModule.createDocument(app, swaggerConfig);
@@ -93,9 +95,15 @@ async function bootstrap() {
   const port = configService.get<number>('PORT', 3000);
   await app.listen(port);
 
-  Logger.log(`🚀 StockTN API démarrée sur : http://localhost:${port}/${apiPrefix}`, 'Bootstrap');
+  Logger.log(
+    `🚀 StockTN API démarrée sur : http://localhost:${port}/${apiPrefix}`,
+    'Bootstrap',
+  );
   if (configService.get<string>('NODE_ENV') !== 'production') {
-    Logger.log(`📚 Swagger UI          : http://localhost:${port}/${apiPrefix}/docs`, 'Bootstrap');
+    Logger.log(
+      `📚 Swagger UI          : http://localhost:${port}/${apiPrefix}/docs`,
+      'Bootstrap',
+    );
   }
 }
 

@@ -9,7 +9,10 @@ import {
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class RegisterDto {
-  @ApiProperty({ example: 'Boutique Mobile Sfax', description: 'Nom de la boutique' })
+  @ApiProperty({
+    example: 'Boutique Mobile Sfax',
+    description: 'Nom de la boutique',
+  })
   @IsString()
   @MinLength(2)
   @MaxLength(100)
@@ -21,13 +24,15 @@ export class RegisterDto {
 
   @ApiProperty({
     example: 'Admin@2026!',
-    description: 'Min 8 caractères, 1 majuscule, 1 chiffre, 1 caractère spécial',
+    description:
+      'Min 8 caractères, 1 majuscule, 1 chiffre, 1 caractère spécial',
   })
   @IsString()
   @MinLength(8)
   @MaxLength(50)
   @Matches(/^(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*])/, {
-    message: 'Le mot de passe doit contenir au moins 1 majuscule, 1 chiffre et 1 caractère spécial',
+    message:
+      'Le mot de passe doit contenir au moins 1 majuscule, 1 chiffre et 1 caractère spécial',
   })
   password: string;
 
@@ -73,13 +78,15 @@ export class ResetPasswordDto {
 
   @ApiProperty({
     example: 'NewAdmin@2026!',
-    description: 'Min 8 caractères, 1 majuscule, 1 chiffre, 1 caractère spécial',
+    description:
+      'Min 8 caractères, 1 majuscule, 1 chiffre, 1 caractère spécial',
   })
   @IsString()
   @MinLength(8)
   @MaxLength(50)
   @Matches(/^(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*])/, {
-    message: 'Le mot de passe doit contenir au moins 1 majuscule, 1 chiffre et 1 caractère spécial',
+    message:
+      'Le mot de passe doit contenir au moins 1 majuscule, 1 chiffre et 1 caractère spécial',
   })
   password: string;
 }

@@ -59,7 +59,8 @@ export class InventoryService {
         },
       },
     });
-    if (!session) throw new NotFoundException('Session d\'inventaire non trouvée');
+    if (!session)
+      throw new NotFoundException("Session d'inventaire non trouvée");
     return mapSession(session);
   }
 
@@ -147,7 +148,8 @@ export class InventoryService {
       include: { items: true },
     });
 
-    if (!session) throw new NotFoundException("Session d'inventaire non trouvée");
+    if (!session)
+      throw new NotFoundException("Session d'inventaire non trouvée");
     if (session.status === 'VALIDATED') {
       throw new BadRequestException('Cette session a déjà été validée');
     }

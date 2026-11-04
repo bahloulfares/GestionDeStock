@@ -41,7 +41,9 @@ export class UsersService {
       where: { tenantId_email: { tenantId, email: dto.email } },
     });
     if (existing) {
-      throw new ConflictException('Un utilisateur avec cet email existe déjà dans ce tenant');
+      throw new ConflictException(
+        'Un utilisateur avec cet email existe déjà dans ce tenant',
+      );
     }
 
     const passwordHash = await bcrypt.hash(dto.password, BCRYPT_ROUNDS);

@@ -7,9 +7,17 @@ import {
   Res,
 } from '@nestjs/common';
 import { Response } from 'express';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBearerAuth,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { ReportsService } from './reports.service';
-import { CurrentUser, CurrentUserData } from '../common/decorators/current-user.decorator';
+import {
+  CurrentUser,
+  CurrentUserData,
+} from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 
 @ApiTags('Reports')
@@ -20,7 +28,9 @@ export class ReportsController {
   constructor(private readonly reportsService: ReportsService) {}
 
   @Get('top-products')
-  @ApiOperation({ summary: 'Top N produits par quantité vendue sur une période (ADMIN)' })
+  @ApiOperation({
+    summary: 'Top N produits par quantité vendue sur une période (ADMIN)',
+  })
   @ApiQuery({ name: 'startDate', required: false })
   @ApiQuery({ name: 'endDate', required: false })
   @ApiQuery({ name: 'limit', required: false, type: Number })
@@ -42,7 +52,11 @@ export class ReportsController {
   @ApiOperation({ summary: 'Total ventes par période groupées (ADMIN)' })
   @ApiQuery({ name: 'startDate', required: false })
   @ApiQuery({ name: 'endDate', required: false })
-  @ApiQuery({ name: 'groupBy', required: false, enum: ['day', 'week', 'month'] })
+  @ApiQuery({
+    name: 'groupBy',
+    required: false,
+    enum: ['day', 'week', 'month'],
+  })
   getSalesByPeriod(
     @CurrentUser() user: CurrentUserData,
     @Query('startDate') startDate?: string,
@@ -58,7 +72,9 @@ export class ReportsController {
   }
 
   @Get('stock-value')
-  @ApiOperation({ summary: 'Valeur totale du stock par catégorie + produits inactifs (ADMIN)' })
+  @ApiOperation({
+    summary: 'Valeur totale du stock par catégorie + produits inactifs (ADMIN)',
+  })
   getStockValue(@CurrentUser() user: CurrentUserData) {
     return this.reportsService.getStockValue(user.tenantId);
   }

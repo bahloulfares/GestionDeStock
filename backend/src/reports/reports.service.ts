@@ -56,7 +56,7 @@ export class ReportsService {
 
     // Choisir le format de troncature selon groupBy
     const truncFn = Prisma.raw(
-      groupBy === 'month' ? "'month'" : groupBy === 'week' ? "'week'" : "'day'"
+      groupBy === 'month' ? "'month'" : groupBy === 'week' ? "'week'" : "'day'",
     );
 
     const results = await this.prisma.$queryRaw<any[]>`
@@ -110,7 +110,11 @@ export class ReportsService {
       const key = p.categoryId ?? '__none__';
       const catName = p.category?.name ?? 'Sans catégorie';
       if (!categoryMap.has(key)) {
-        categoryMap.set(key, { categoryName: catName, value: 0, productCount: 0 });
+        categoryMap.set(key, {
+          categoryName: catName,
+          value: 0,
+          productCount: 0,
+        });
       }
       const entry = categoryMap.get(key)!;
       entry.value += Number(p.priceBuy) * p.qty;
@@ -177,7 +181,11 @@ export class ReportsService {
   }
 
   // ─── GET /api/reports/sales/export ──────────────────────────────────────────
-  async exportSalesExcel(tenantId: string, startDate?: string, endDate?: string) {
+  async exportSalesExcel(
+    tenantId: string,
+    startDate?: string,
+    endDate?: string,
+  ) {
     const start = startDate ? new Date(startDate) : new Date('2000-01-01');
     const end = endDate ? new Date(endDate) : new Date();
 
@@ -185,15 +193,15 @@ export class ReportsService {
       where: { tenantId, date: { gte: start, lte: end } },
       include: {
         createdByUser: { select: { email: true } },
-        items: { include: { product: { select: { name: true } } } }
+        items: { include: { product: { select: { name: true } } } },
       },
-      orderBy: { date: 'asc' }
+      orderBy: { date: 'asc' },
     });
 
     const ExcelJS = require('exceljs');
     const workbook = new ExcelJS.Workbook();
     const sheet = workbook.addWorksheet('Ventes');
-    
+
     sheet.columns = [
       { header: 'ID', key: 'id', width: 36 },
       { header: 'Date', key: 'date', width: 25 },
@@ -212,7 +220,7 @@ export class ReportsService {
         payment: s.paymentMethod,
         status: s.status,
         seller: s.createdByUser.email,
-        items: s.items.map(i => `${i.qty}x ${i.product.name}`).join(', ')
+        items: s.items.map((i) => `${i.qty}x ${i.product.name}`).join(', '),
       });
     }
 

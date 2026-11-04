@@ -1,4 +1,10 @@
-import { Controller, Get, HttpException, HttpStatus, Logger } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  HttpException,
+  HttpStatus,
+  Logger,
+} from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Public } from '../common/decorators/public.decorator';
 import { SkipSubscriptionCheck } from '../common/decorators/skip-subscription.decorator';
@@ -22,7 +28,9 @@ export class HealthController {
   constructor(private readonly prisma: PrismaService) {}
 
   @Get()
-  @ApiOperation({ summary: 'Vérification de santé de l\'API et de la base de données' })
+  @ApiOperation({
+    summary: "Vérification de santé de l'API et de la base de données",
+  })
   async check(): Promise<HealthResponse> {
     const uptime = Math.floor(process.uptime());
     const version = packageJson.version;
@@ -36,7 +44,10 @@ export class HealthController {
       ]);
       return { status: 'ok', db: 'ok', uptime, version };
     } catch (error) {
-      this.logger.warn('Health check DB failed', error instanceof Error ? error.message : String(error));
+      this.logger.warn(
+        'Health check DB failed',
+        error instanceof Error ? error.message : String(error),
+      );
       throw new HttpException(
         { status: 'error', db: 'error', uptime, version },
         HttpStatus.SERVICE_UNAVAILABLE,

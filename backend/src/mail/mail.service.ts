@@ -20,13 +20,20 @@ export class MailService implements OnModuleInit {
     const smtpHost = this.configService.get<string>('SMTP_HOST');
     const smtpUser = this.configService.get<string>('SMTP_USER');
 
-    if (isDev && (!smtpHost || smtpUser === 'votre@email.com' || smtpHost === 'smtp.gmail.com')) {
+    if (
+      isDev &&
+      (!smtpHost ||
+        smtpUser === 'votre@email.com' ||
+        smtpHost === 'smtp.gmail.com')
+    ) {
       try {
         this.logger.log('Tentative de connexion Ethereal Email...');
-        const testAccount = await Promise.race([
+        const testAccount = (await Promise.race([
           nodemailer.createTestAccount(),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000)),
-        ]) as any;
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('timeout')), 5000),
+          ),
+        ])) as any;
         this.transporter = nodemailer.createTransport({
           host: testAccount.smtp.host,
           port: testAccount.smtp.port,
@@ -40,7 +47,9 @@ export class MailService implements OnModuleInit {
         this.logger.log(`✅ Ethereal Email prêt. Compte: ${testAccount.user}`);
       } catch (err) {
         // Pas d'internet ou timeout — on affiche les emails dans la console (mode dev sans réseau)
-        this.logger.warn('⚠️  Ethereal Email non disponible (pas de réseau). Les emails seront affichés dans la console.');
+        this.logger.warn(
+          '⚠️  Ethereal Email non disponible (pas de réseau). Les emails seront affichés dans la console.',
+        );
         this.transporter = nodemailer.createTransport({ jsonTransport: true });
       }
     } else {
@@ -62,7 +71,9 @@ export class MailService implements OnModuleInit {
       await this.initTransporter();
     }
 
-    const from = this.configService.get<string>('SMTP_FROM') || '"StockTN" <noreply@stocktn.tn>';
+    const from =
+      this.configService.get<string>('SMTP_FROM') ||
+      '"StockTN" <noreply@stocktn.tn>';
     const info = await this.transporter.sendMail({
       from,
       to,
@@ -81,12 +92,24 @@ export class MailService implements OnModuleInit {
       }
     } else {
       // Mode console (pas de réseau Ethereal, pas de SMTP configuré)
-      this.logger.log('══════════════ EMAIL (MODE DEV - CONSOLE) ══════════════');
+      this.logger.log(
+        '══════════════ EMAIL (MODE DEV - CONSOLE) ══════════════',
+      );
       this.logger.log(`📧 À        : ${to}`);
       this.logger.log(`📌 Sujet    : ${subject}`);
-      this.logger.log(`📝 Contenu  : ${html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 300)}...`);
-      this.logger.log('═══════════════════════════════════════════════════════');
-      this.logger.log('💡 Pour recevoir de vrais emails, configurez SMTP dans backend/.env');
+      this.logger.log(
+        `📝 Contenu  : ${html
+          .replace(/<[^>]*>/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim()
+          .slice(0, 300)}...`,
+      );
+      this.logger.log(
+        '═══════════════════════════════════════════════════════',
+      );
+      this.logger.log(
+        '💡 Pour recevoir de vrais emails, configurez SMTP dans backend/.env',
+      );
     }
 
     return info;

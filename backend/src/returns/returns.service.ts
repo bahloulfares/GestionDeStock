@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ActivityLogsService } from '../activity-logs/activity-logs.service';
 import { CreateReturnDto } from './dto/return.dto';
@@ -16,17 +20,23 @@ export class ReturnsService {
       include: { items: true },
     });
     if (!sale) throw new NotFoundException('Vente non trouvée');
-    if (sale.status !== 'COMPLETED') throw new BadRequestException('La vente doit être complétée');
+    if (sale.status !== 'COMPLETED')
+      throw new BadRequestException('La vente doit être complétée');
 
     // Vérifier les quantités retournées par rapport à la vente
     for (const item of dto.items) {
-      const saleItem = sale.items.find(si => si.productId === item.productId);
-      if (!saleItem) throw new BadRequestException(`Le produit ${item.productId} ne fait pas partie de cette vente`);
-      
+      const saleItem = sale.items.find((si) => si.productId === item.productId);
+      if (!saleItem)
+        throw new BadRequestException(
+          `Le produit ${item.productId} ne fait pas partie de cette vente`,
+        );
+
       // On devrait aussi vérifier que la qté retournée <= qté vendue - qtés déjà retournées
       // Mais pour rester simple on vérifie juste <= qté vendue
       if (item.qty > saleItem.qty) {
-        throw new BadRequestException(`Quantité retournée supérieure à la quantité vendue pour ce produit`);
+        throw new BadRequestException(
+          `Quantité retournée supérieure à la quantité vendue pour ce produit`,
+        );
       }
     }
 
@@ -37,7 +47,7 @@ export class ReturnsService {
         createdBy: userId,
         notes: dto.notes,
         items: {
-          create: dto.items.map(i => ({
+          create: dto.items.map((i) => ({
             productId: i.productId,
             qty: i.qty,
             reason: i.reason,
@@ -48,7 +58,13 @@ export class ReturnsService {
       include: { items: true },
     });
 
-    await this.activityLogs.log(tenantId, userId, 'CREATE', 'sale_return', saleReturn.id);
+    await this.activityLogs.log(
+      tenantId,
+      userId,
+      'CREATE',
+      'sale_return',
+      saleReturn.id,
+    );
     return saleReturn;
   }
 
@@ -58,7 +74,8 @@ export class ReturnsService {
       include: { items: true },
     });
     if (!saleReturn) throw new NotFoundException('Retour non trouvé');
-    if (saleReturn.status !== 'PENDING') throw new BadRequestException('Le retour n\'est pas en attente');
+    if (saleReturn.status !== 'PENDING')
+      throw new BadRequestException("Le retour n'est pas en attente");
 
     await this.prisma.$transaction(async (tx) => {
       await tx.saleReturn.update({
@@ -76,7 +93,13 @@ export class ReturnsService {
       }
     });
 
-    await this.activityLogs.log(tenantId, userId, 'VALIDATE', 'sale_return', id);
+    await this.activityLogs.log(
+      tenantId,
+      userId,
+      'VALIDATE',
+      'sale_return',
+      id,
+    );
     return { success: true };
   }
 
@@ -85,7 +108,8 @@ export class ReturnsService {
       where: { id, tenantId },
     });
     if (!saleReturn) throw new NotFoundException('Retour non trouvé');
-    if (saleReturn.status !== 'PENDING') throw new BadRequestException('Le retour n\'est pas en attente');
+    if (saleReturn.status !== 'PENDING')
+      throw new BadRequestException("Le retour n'est pas en attente");
 
     await this.prisma.saleReturn.update({
       where: { id },
@@ -102,7 +126,9 @@ export class ReturnsService {
       this.prisma.saleReturn.findMany({
         where: { tenantId },
         include: {
-          items: { include: { product: { select: { name: true, reference: true } } } },
+          items: {
+            include: { product: { select: { name: true, reference: true } } },
+          },
           createdByUser: { select: { email: true } },
           sale: { select: { id: true, date: true, total: true } },
         },
@@ -120,7 +146,9 @@ export class ReturnsService {
     const saleReturn = await this.prisma.saleReturn.findUnique({
       where: { id, tenantId },
       include: {
-        items: { include: { product: { select: { name: true, reference: true } } } },
+        items: {
+          include: { product: { select: { name: true, reference: true } } },
+        },
         createdByUser: { select: { email: true } },
         sale: { select: { id: true, date: true, total: true } },
       },

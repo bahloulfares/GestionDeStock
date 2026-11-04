@@ -9,7 +9,12 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
-import { RegisterDto, LoginDto, ForgotPasswordDto, ResetPasswordDto } from './dto/auth.dto';
+import {
+  RegisterDto,
+  LoginDto,
+  ForgotPasswordDto,
+  ResetPasswordDto,
+} from './dto/auth.dto';
 import { MailService } from '../mail/mail.service';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
@@ -72,10 +77,13 @@ export class AuthService {
       return { tenant, user };
     });
 
-    this.logger.log(`[SETUP] Application initialized successfully by Admin: ${dto.email}`);
+    this.logger.log(
+      `[SETUP] Application initialized successfully by Admin: ${dto.email}`,
+    );
 
     return {
-      message: 'Application configurée avec succès. Vous pouvez maintenant vous connecter.',
+      message:
+        'Application configurée avec succès. Vous pouvez maintenant vous connecter.',
       tenantId: result.tenant.id,
     };
   }
@@ -131,10 +139,13 @@ export class AuthService {
       return { tenant, user };
     });
 
-    this.logger.log(`[REGISTER] New shop registered: ${dto.shopName} (${dto.email}) with 14-day trial`);
+    this.logger.log(
+      `[REGISTER] New shop registered: ${dto.shopName} (${dto.email}) with 14-day trial`,
+    );
 
     return {
-      message: 'Compte créé avec succès ! Vous bénéficiez de 14 jours d\'essai gratuit.',
+      message:
+        "Compte créé avec succès ! Vous bénéficiez de 14 jours d'essai gratuit.",
       tenantId: result.tenant.id,
     };
   }
@@ -162,7 +173,9 @@ export class AuthService {
     }
 
     if (!user.isVerified) {
-      throw new UnauthorizedException('Compte non vérifié. Vérifiez votre email.');
+      throw new UnauthorizedException(
+        'Compte non vérifié. Vérifiez votre email.',
+      );
     }
 
     // Si c'est un utilisateur rattaché à une boutique (ADMIN ou EMPLOYEE)
@@ -177,7 +190,9 @@ export class AuthService {
       const now = new Date();
       const expiresAt = new Date(user.tenant.subscriptionExpiresAt);
       const isExpired = expiresAt < now;
-      const daysLeft = Math.ceil((expiresAt.getTime() - now.getTime()) / (1000 * 3600 * 24));
+      const daysLeft = Math.ceil(
+        (expiresAt.getTime() - now.getTime()) / (1000 * 3600 * 24),
+      );
 
       subscriptionInfo = {
         status: isExpired ? 'EXPIRED' : user.tenant.status,
@@ -189,7 +204,12 @@ export class AuthService {
       };
     }
 
-    const tokens = await this.generateTokens(user.id, user.email, user.role, user.tenantId);
+    const tokens = await this.generateTokens(
+      user.id,
+      user.email,
+      user.role,
+      user.tenantId,
+    );
 
     return {
       ...tokens,
@@ -208,7 +228,8 @@ export class AuthService {
 
     if (!user) {
       return {
-        message: "Si un compte est associé à cette adresse, un e-mail de réinitialisation a été envoyé.",
+        message:
+          'Si un compte est associé à cette adresse, un e-mail de réinitialisation a été envoyé.',
       };
     }
 
@@ -265,13 +286,17 @@ export class AuthService {
     }
 
     return {
-      message: "Si un compte est associé à cette adresse, un e-mail de réinitialisation a été envoyé.",
+      message:
+        'Si un compte est associé à cette adresse, un e-mail de réinitialisation a été envoyé.',
     };
   }
 
   // ─── Reset Password ────────────────────────────────────────────────────────
   async resetPassword(dto: ResetPasswordDto) {
-    const tokenHash = crypto.createHash('sha256').update(dto.token).digest('hex');
+    const tokenHash = crypto
+      .createHash('sha256')
+      .update(dto.token)
+      .digest('hex');
 
     const user = await this.prisma.user.findFirst({
       where: {
@@ -282,7 +307,9 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new BadRequestException('Le lien de réinitialisation est invalide ou a expiré (Invalid or expired token)');
+      throw new BadRequestException(
+        'Le lien de réinitialisation est invalide ou a expiré (Invalid or expired token)',
+      );
     }
 
     const passwordHash = await bcrypt.hash(dto.password, BCRYPT_ROUNDS);
@@ -297,10 +324,13 @@ export class AuthService {
       },
     });
 
-    this.logger.log(`[AUTH] Password reset successfully for user: ${user.email}`);
+    this.logger.log(
+      `[AUTH] Password reset successfully for user: ${user.email}`,
+    );
 
     return {
-      message: 'Votre mot de passe a été modifié avec succès. Vous pouvez maintenant vous connecter.',
+      message:
+        'Votre mot de passe a été modifié avec succès. Vous pouvez maintenant vous connecter.',
     };
   }
 
@@ -326,9 +356,12 @@ export class AuthService {
       },
     });
 
-    let validToken: typeof storedTokens[0] | undefined;
+    let validToken: (typeof storedTokens)[0] | undefined;
     for (const stored of storedTokens) {
-      const matches = await bcrypt.compare(refreshToken, stored.refreshTokenHash);
+      const matches = await bcrypt.compare(
+        refreshToken,
+        stored.refreshTokenHash,
+      );
       if (matches) {
         validToken = stored;
         break;
@@ -341,7 +374,9 @@ export class AuthService {
         where: { userId: payload.sub },
         data: { revoked: true },
       });
-      throw new UnauthorizedException('Session invalide. Veuillez vous reconnecter.');
+      throw new UnauthorizedException(
+        'Session invalide. Veuillez vous reconnecter.',
+      );
     }
 
     // Révoquer l'ancien token (rotation)
@@ -376,7 +411,10 @@ export class AuthService {
     });
 
     for (const stored of storedTokens) {
-      const matches = await bcrypt.compare(refreshToken, stored.refreshTokenHash);
+      const matches = await bcrypt.compare(
+        refreshToken,
+        stored.refreshTokenHash,
+      );
       if (matches) {
         await this.prisma.tokenStore.update({
           where: { id: stored.id },
@@ -405,7 +443,8 @@ export class AuthService {
 
     const refreshToken = this.jwtService.sign(payload, {
       secret: this.config.get<string>('JWT_REFRESH_SECRET'),
-      expiresIn: (this.config.get<string>('JWT_REFRESH_EXPIRES_IN') || '7d') as any,
+      expiresIn: (this.config.get<string>('JWT_REFRESH_EXPIRES_IN') ||
+        '7d') as any,
     });
 
     // Stocker le refresh token hashé

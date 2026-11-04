@@ -212,7 +212,7 @@ export class PurchasesService {
     if (!order) throw new NotFoundException('Bon de commande non trouvé');
     if (order.status === 'VALIDATED') {
       throw new BadRequestException(
-        'Impossible d\'annuler un bon de commande déjà validé',
+        "Impossible d'annuler un bon de commande déjà validé",
       );
     }
 
@@ -294,8 +294,14 @@ export class PurchasesService {
         },
 
         { text: `Fournisseur : ${order.supplier.name}`, margin: [0, 5, 0, 2] },
-        { text: `Réf : #${order.id.slice(-8).toUpperCase()}`, margin: [0, 5, 0, 2] },
-        { text: `Date : ${order.date.toLocaleDateString()}`, margin: [0, 0, 0, 20] },
+        {
+          text: `Réf : #${order.id.slice(-8).toUpperCase()}`,
+          margin: [0, 5, 0, 2],
+        },
+        {
+          text: `Date : ${order.date.toLocaleDateString()}`,
+          margin: [0, 0, 0, 20],
+        },
 
         {
           table: {
@@ -315,7 +321,12 @@ export class PurchasesService {
                 (item.qty * Number(item.priceBuy)).toFixed(3),
               ]),
               [
-                { text: 'TOTAL ESTIMÉ (TND)', colSpan: 3, alignment: 'right', bold: true },
+                {
+                  text: 'TOTAL ESTIMÉ (TND)',
+                  colSpan: 3,
+                  alignment: 'right',
+                  bold: true,
+                },
                 {},
                 {},
                 { text: total.toFixed(3), bold: true },

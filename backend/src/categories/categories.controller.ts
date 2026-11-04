@@ -10,7 +10,10 @@ import {
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { CategoriesService } from './categories.service';
 import { CreateCategoryDto, UpdateCategoryDto } from './dto/category.dto';
-import { CurrentUser, CurrentUserData } from '../common/decorators/current-user.decorator';
+import {
+  CurrentUser,
+  CurrentUserData,
+} from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 
 @ApiTags('Categories')
@@ -28,10 +31,7 @@ export class CategoriesController {
   @Post()
   @Roles('ADMIN')
   @ApiOperation({ summary: 'Créer une catégorie (ADMIN)' })
-  create(
-    @CurrentUser() user: CurrentUserData,
-    @Body() dto: CreateCategoryDto,
-  ) {
+  create(@CurrentUser() user: CurrentUserData, @Body() dto: CreateCategoryDto) {
     return this.categoriesService.create(user.tenantId, dto);
   }
 
@@ -48,11 +48,11 @@ export class CategoriesController {
 
   @Delete(':id')
   @Roles('ADMIN')
-  @ApiOperation({ summary: 'Supprimer une catégorie (ADMIN) - bloqué si des produits existent' })
-  remove(
-    @CurrentUser() user: CurrentUserData,
-    @Param('id') id: string,
-  ) {
+  @ApiOperation({
+    summary:
+      'Supprimer une catégorie (ADMIN) - bloqué si des produits existent',
+  })
+  remove(@CurrentUser() user: CurrentUserData, @Param('id') id: string) {
     return this.categoriesService.remove(user.tenantId, id);
   }
 }

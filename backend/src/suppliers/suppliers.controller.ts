@@ -10,10 +10,18 @@ import {
   ParseIntPipe,
   DefaultValuePipe,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBearerAuth,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { SuppliersService } from './suppliers.service';
 import { CreateSupplierDto, UpdateSupplierDto } from './dto/supplier.dto';
-import { CurrentUser, CurrentUserData } from '../common/decorators/current-user.decorator';
+import {
+  CurrentUser,
+  CurrentUserData,
+} from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 
 @ApiTags('Suppliers')
@@ -35,10 +43,7 @@ export class SuppliersController {
   @Post()
   @Roles('ADMIN')
   @ApiOperation({ summary: 'Créer un fournisseur (ADMIN)' })
-  create(
-    @CurrentUser() user: CurrentUserData,
-    @Body() dto: CreateSupplierDto,
-  ) {
+  create(@CurrentUser() user: CurrentUserData, @Body() dto: CreateSupplierDto) {
     return this.suppliersService.create(user.tenantId, dto);
   }
 
@@ -55,11 +60,10 @@ export class SuppliersController {
 
   @Delete(':id')
   @Roles('ADMIN')
-  @ApiOperation({ summary: 'Supprimer un fournisseur (ADMIN) - bloqué si des BCs existent' })
-  remove(
-    @CurrentUser() user: CurrentUserData,
-    @Param('id') id: string,
-  ) {
+  @ApiOperation({
+    summary: 'Supprimer un fournisseur (ADMIN) - bloqué si des BCs existent',
+  })
+  remove(@CurrentUser() user: CurrentUserData, @Param('id') id: string) {
     return this.suppliersService.remove(user.tenantId, id);
   }
 }

@@ -10,10 +10,18 @@ import {
   ParseIntPipe,
   DefaultValuePipe,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBearerAuth,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { ProductsService } from './products.service';
 import { CreateProductDto, UpdateProductDto } from './dto/product.dto';
-import { CurrentUser, CurrentUserData } from '../common/decorators/current-user.decorator';
+import {
+  CurrentUser,
+  CurrentUserData,
+} from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 
 @ApiTags('Products')
@@ -57,10 +65,7 @@ export class ProductsController {
   @Post()
   @Roles('ADMIN')
   @ApiOperation({ summary: 'Créer un produit (ADMIN)' })
-  create(
-    @CurrentUser() user: CurrentUserData,
-    @Body() dto: CreateProductDto,
-  ) {
+  create(@CurrentUser() user: CurrentUserData, @Body() dto: CreateProductDto) {
     return this.productsService.create(user.tenantId, dto);
   }
 
@@ -78,10 +83,7 @@ export class ProductsController {
   @Delete(':id')
   @Roles('ADMIN')
   @ApiOperation({ summary: 'Soft-delete un produit (ADMIN)' })
-  remove(
-    @CurrentUser() user: CurrentUserData,
-    @Param('id') id: string,
-  ) {
+  remove(@CurrentUser() user: CurrentUserData, @Param('id') id: string) {
     return this.productsService.remove(user.tenantId, id);
   }
 }

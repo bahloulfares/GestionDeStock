@@ -1,7 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateProductDto, UpdateProductDto } from './dto/product.dto';
 
@@ -100,9 +97,7 @@ export class ProductsService {
       where: { tenantId, isActive: true },
       include: productInclude,
     });
-    return products
-      .filter((p) => p.qty <= p.minStock)
-      .map(mapProduct);
+    return products.filter((p) => p.qty <= p.minStock).map(mapProduct);
   }
 
   // ─── POST /api/products ──────────────────────────────────────────────────────

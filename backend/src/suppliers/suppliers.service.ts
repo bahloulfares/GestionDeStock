@@ -53,7 +53,9 @@ export class SuppliersService {
         ...(dto.phone !== undefined && { phone: dto.phone }),
         ...(dto.email !== undefined && { email: dto.email }),
         ...(dto.city !== undefined && { city: dto.city }),
-        ...(dto.paymentTerms !== undefined && { paymentTerms: dto.paymentTerms }),
+        ...(dto.paymentTerms !== undefined && {
+          paymentTerms: dto.paymentTerms,
+        }),
       },
     });
   }

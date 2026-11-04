@@ -9,7 +9,12 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBearerAuth,
+  ApiResponse,
+} from '@nestjs/swagger';
 import { SuperAdminService } from './super-admin.service';
 import {
   CreateTenantByAdminDto,
@@ -29,44 +34,59 @@ export class SuperAdminController {
 
   @Roles('SUPER_ADMIN')
   @Get('stats')
-  @ApiOperation({ summary: 'KPIs globaux de la plateforme (Boutiques actives, expirées, revenus DT)' })
+  @ApiOperation({
+    summary:
+      'KPIs globaux de la plateforme (Boutiques actives, expirées, revenus DT)',
+  })
   getStats() {
     return this.superAdminService.getDashboardStats();
   }
 
   @Roles('SUPER_ADMIN')
   @Get('tenants')
-  @ApiOperation({ summary: 'Liste de tous les clients (boutiques) avec filtres de statut et recherche' })
+  @ApiOperation({
+    summary:
+      'Liste de tous les clients (boutiques) avec filtres de statut et recherche',
+  })
   findAll(
     @Query('search') search?: string,
     @Query('status') status?: string,
     @Query('page') page = 1,
     @Query('limit') limit = 20,
   ) {
-    return this.superAdminService.findAllTenants(search, status, Number(page), Number(limit));
+    return this.superAdminService.findAllTenants(
+      search,
+      status,
+      Number(page),
+      Number(limit),
+    );
   }
 
   @Roles('SUPER_ADMIN')
   @Get('tenants/:id')
-  @ApiOperation({ summary: 'Détail d\'une boutique avec son historique de paiements' })
+  @ApiOperation({
+    summary: "Détail d'une boutique avec son historique de paiements",
+  })
   findOne(@Param('id') id: string) {
     return this.superAdminService.findOneTenant(id);
   }
 
   @Roles('SUPER_ADMIN')
   @Post('tenants')
-  @ApiOperation({ summary: 'Créer manuellement une nouvelle boutique avec accès abonnement' })
-  create(
-    @CurrentUser() user: any,
-    @Body() dto: CreateTenantByAdminDto,
-  ) {
+  @ApiOperation({
+    summary: 'Créer manuellement une nouvelle boutique avec accès abonnement',
+  })
+  create(@CurrentUser() user: any, @Body() dto: CreateTenantByAdminDto) {
     return this.superAdminService.createTenant(dto, user.sub);
   }
 
   @Roles('SUPER_ADMIN')
   @Post('tenants/:id/subscription')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Prolonger l\'abonnement d\'un client (+1 mois, +1 an, montant encaissé)' })
+  @ApiOperation({
+    summary:
+      "Prolonger l'abonnement d'un client (+1 mois, +1 an, montant encaissé)",
+  })
   renew(
     @Param('id') id: string,
     @CurrentUser() user: any,
@@ -78,25 +98,27 @@ export class SuperAdminController {
   @Roles('SUPER_ADMIN')
   @Patch('tenants/:id/toggle-block')
   @ApiOperation({ summary: 'Suspendre ou réactiver une boutique cliente' })
-  toggleBlock(
-    @Param('id') id: string,
-    @Body() dto: ToggleBlockTenantDto,
-  ) {
+  toggleBlock(@Param('id') id: string, @Body() dto: ToggleBlockTenantDto) {
     return this.superAdminService.toggleBlock(id, dto);
   }
 
   @Roles('SUPER_ADMIN')
   @Patch('tenants/:tenantId/users/:userId/reset-password')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Réinitialiser le mot de passe d\'un utilisateur d\'une boutique' })
+  @ApiOperation({
+    summary: "Réinitialiser le mot de passe d'un utilisateur d'une boutique",
+  })
   resetUserPassword(
     @Param('tenantId') tenantId: string,
     @Param('userId') userId: string,
     @Body() dto: ResetUserPasswordDto,
   ) {
-    return this.superAdminService.resetUserPassword(tenantId, userId, dto.newPassword);
+    return this.superAdminService.resetUserPassword(
+      tenantId,
+      userId,
+      dto.newPassword,
+    );
   }
-
 }
 
 @ApiTags('Mon Abonnement (Espace Client)')
@@ -107,7 +129,9 @@ export class TenantSubscriptionController {
 
   @SkipSubscriptionCheck()
   @Get('my-subscription')
-  @ApiOperation({ summary: 'Consulter l\'état de mon abonnement, jours restants et historique' })
+  @ApiOperation({
+    summary: "Consulter l'état de mon abonnement, jours restants et historique",
+  })
   getMySubscription(@CurrentUser() user: any) {
     return this.superAdminService.getMySubscription(user.tenantId);
   }
