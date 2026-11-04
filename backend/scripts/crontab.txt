@@ -1,0 +1,14 @@
+# StockTN - Crontab sauvegarde PostgreSQL
+# Adapter les chemins absolus avant d installer.
+#
+# Installation sur le serveur Linux :
+#   crontab -l 2>/dev/null | cat - /chemin/vers/backend/scripts/crontab.txt | crontab -
+#
+# Verifier que backup.sh est executable :
+#   chmod +x /opt/stocktn/backend/scripts/backup.sh
+
+# Sauvegarde quotidienne a 02h00
+0 2 * * * BACKUP_DIR=/opt/stocktn/backend/backups /opt/stocktn/backend/scripts/backup.sh >> /var/log/stocktn-backup.log 2>&1
+
+# Rotation : suppression des dumps de plus de 14 jours a 03h00
+0 3 * * * find /opt/stocktn/backend/backups -name '*.dump' -mtime +14 -delete >> /var/log/stocktn-backup.log 2>&1
