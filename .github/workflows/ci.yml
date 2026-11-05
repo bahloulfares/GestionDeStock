@@ -13,6 +13,21 @@ jobs:
       run:
         working-directory: backend
 
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: mvp_user
+          POSTGRES_PASSWORD: mvp_secret_2026
+          POSTGRES_DB: mvp_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
     steps:
       - uses: actions/checkout@v4
 
@@ -34,3 +49,9 @@ jobs:
 
       - name: Test
         run: npm test -- --passWithNoTests
+
+      - name: Integration Tests
+        run: npm run test:integration
+        env:
+          DATABASE_URL: postgresql://mvp_user:mvp_secret_2026@localhost:5432/mvp_test?schema=public
+
