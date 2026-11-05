@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ActivityLogsService } from '../activity-logs/activity-logs.service';
@@ -198,31 +199,48 @@ export class SalesService {
     id: string,
     dto: CancelSaleDto,
   ) {
-    const sale = await this.prisma.sale.findFirst({
-      where: { id, tenantId },
-      include: { items: true },
-    });
-    if (!sale) throw new NotFoundException('Vente non trouvée');
-    if (sale.status !== 'COMPLETED') {
-      throw new BadRequestException(
-        'Seule une vente COMPLETED peut être annulée',
-      );
-    }
+    let saleItems: any[];
 
     await this.prisma.$transaction(async (tx) => {
-      // Annuler la vente
-      await tx.sale.update({
-        where: { id },
+      // Transition atomique: COMPLETED -> CANCELLED
+      const result = await tx.sale.updateMany({
+        where: { 
+          id, 
+          tenantId, 
+          status: 'COMPLETED' 
+        },
         data: {
           status: 'CANCELLED',
           cancelReason: dto.reason,
         },
       });
 
-      // Réintégrer le stock
-      for (const item of sale.items) {
+      if (result.count === 0) {
+        // Vérifier si la vente existe
+        const sale = await tx.sale.findFirst({ where: { id, tenantId } });
+        if (!sale) {
+          throw new NotFoundException('Vente non trouvée');
+        }
+        throw new ConflictException(
+          'Cette vente ne peut pas être annulée (déjà annulée ou statut invalide)',
+        );
+      }
+
+      // Récupérer les items après transition réussie
+      const sale = await tx.sale.findUnique({
+        where: { id },
+        include: { items: true },
+      });
+      if (!sale) throw new NotFoundException("Vente introuvable apres transition");
+      saleItems = sale.items;
+
+      // Réintégrer le stock de manière atomique
+      for (const item of saleItems) {
         await tx.product.update({
-          where: { id: item.productId },
+          where: { 
+            id: item.productId,
+            tenantId, // Sécurité tenant
+          },
           data: { qty: { increment: item.qty } },
         });
       }
