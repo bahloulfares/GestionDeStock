@@ -1,11 +1,12 @@
 ﻿import { IntegrationTestHelper } from './helpers/integration-test.helper';
 import { ConflictException } from '@nestjs/common';
 
-describe('B1 - Atomic status transitions (integration)', () => {
+describe('B1 - Atomic status transitions with REAL services (integration)', () => {
   let helper: IntegrationTestHelper;
 
   beforeAll(async () => {
     helper = new IntegrationTestHelper();
+    await helper.initializeServices();
   });
 
   beforeEach(async () => {
@@ -17,169 +18,137 @@ describe('B1 - Atomic status transitions (integration)', () => {
     await helper.disconnect();
   });
 
-  describe('sales.cancel() - concurrent cancellations', () => {
-    it('should allow only one concurrent cancellation to succeed', async () => {
-      // Setup
-      const tenant = await helper.createTestTenant();
-      const admin = await helper.createTestAdmin(tenant.id);
-      const category = await helper.createTestCategory(tenant.id);
-      const product = await helper.createTestProduct(tenant.id, category.id, {
-        qty: 10,
-        priceSell: 100,
-        priceBuy: 50,
-      });
+  describe('sales.cancel() - deterministic race condition test', () => {
+    it('should detect race condition over 30 attempts', async () => {
+      let raceConditionDetected = false;
+      let totalAttempts = 0;
+      let atomicSuccesses = 0;
 
-      // Create a completed sale
-      const sale = await helper.prisma.sale.create({
-        data: {
-          tenantId: tenant.id,
-          total: 200,
-          paymentMethod: 'CASH',
-          status: 'COMPLETED',
-          createdBy: admin.id,
-          items: {
-            create: [
-              {
-                productId: product.id,
-                qty: 2,
-                priceSell: 100,
-                costPriceAtSale: 50,
-              },
-            ],
-          },
-        },
-      });
+      // Run 30 attempts to force race condition detection
+      for (let i = 0; i < 30; i++) {
+        totalAttempts++;
 
-      // Update product stock (simulate the sale deducted stock)
-      await helper.prisma.product.update({
-        where: { id: product.id },
-        data: { qty: 8 }, // 10 - 2
-      });
-
-      // Simulate concurrent cancel operations (direct updateMany + stock update)
-      const cancelSale = async () => {
-        return helper.prisma.$transaction(async (tx) => {
-          const result = await tx.sale.updateMany({
-            where: { id: sale.id, tenantId: tenant.id, status: 'COMPLETED' },
-            data: { status: 'CANCELLED', cancelReason: 'Test' },
-          });
-
-          if (result.count === 0) {
-            throw new ConflictException('Already cancelled');
-          }
-
-          // Get items
-          const saleWithItems = await tx.sale.findUnique({
-            where: { id: sale.id },
-            include: { items: true },
-          });
-
-          // Restore stock
-          for (const item of saleWithItems!.items) {
-            await tx.product.update({
-              where: { id: item.productId },
-              data: { qty: { increment: item.qty } },
-            });
-          }
+        // Setup fresh data for each attempt
+        const tenant = await helper.createTestTenant(`Shop ${i}`);
+        const admin = await helper.createTestAdmin(tenant.id, `admin${i}@test.com`);
+        const category = await helper.createTestCategory(tenant.id, `Category ${i}`);
+        const product = await helper.createTestProduct(tenant.id, category.id, {
+          name: `Product ${i}`,
+          reference: `REF-${Date.now()}-${i}`,
+          qty: 100,
+          priceSell: 100,
+          priceBuy: 50,
         });
-      };
 
-      // Concurrent cancellations
-      const results = await Promise.allSettled([
-        cancelSale(),
-        cancelSale(),
-      ]);
+        // Create a sale using the REAL service
+        const sale = await helper.salesService.create(tenant.id, admin.id, {
+          paymentMethod: 'CASH',
+          notes: undefined,
+          items: [{ productId: product.id, qty: 2, priceSell: 100 }],
+        });
 
-      // One should succeed, one should fail
-      const succeeded = results.filter(r => r.status === 'fulfilled').length;
-      const failed = results.filter(r => r.status === 'rejected').length;
+        // Check product stock after sale
+        const productAfterSale = await helper.prisma.product.findUnique({ where: { id: product.id } });
+        expect(productAfterSale?.qty).toBe(98); // 100 - 2
 
-      expect(succeeded).toBe(1);
-      expect(failed).toBe(1);
+        // Concurrent cancellations using REAL service
+        const results = await Promise.allSettled([
+          helper.salesService.cancel(tenant.id, admin.id, sale.id, { reason: `Test 1-${i}` }),
+          helper.salesService.cancel(tenant.id, admin.id, sale.id, { reason: `Test 2-${i}` }),
+        ]);
 
-      // Check the rejection is ConflictException
-      const rejection = results.find(r => r.status === 'rejected') as PromiseRejectedResult;
-      expect(rejection.reason).toBeInstanceOf(ConflictException);
+        // Check results
+        const succeeded = results.filter(r => r.status === 'fulfilled').length;
+        const failed = results.filter(r => r.status === 'rejected').length;
 
-      // Check final state
-      const finalSale = await helper.prisma.sale.findUnique({ where: { id: sale.id } });
-      expect(finalSale?.status).toBe('CANCELLED');
+        if (succeeded === 1 && failed === 1) {
+          atomicSuccesses++;
+          
+          // Verify the rejection is ConflictException
+          const rejection = results.find(r => r.status === 'rejected') as PromiseRejectedResult;
+          expect(rejection.reason).toBeInstanceOf(ConflictException);
 
-      // Check stock was incremented only once
-      const finalProduct = await helper.prisma.product.findUnique({ where: { id: product.id } });
-      expect(finalProduct?.qty).toBe(10); // 8 + 2 (one cancellation)
-    });
+          // Verify final state
+          const finalSale = await helper.prisma.sale.findUnique({ where: { id: sale.id } });
+          expect(finalSale?.status).toBe('CANCELLED');
+
+          // Verify stock was restored only once (atomic behavior)
+          const finalProduct = await helper.prisma.product.findUnique({ where: { id: product.id } });
+          expect(finalProduct?.qty).toBe(100); // 98 + 2 (one cancellation)
+        } else {
+          // Race condition detected (both succeeded or both failed)
+          raceConditionDetected = true;
+          console.log(`❌ Race condition at attempt ${i + 1}: succeeded=${succeeded}, failed=${failed}`);
+          
+          if (succeeded === 2) {
+            // Both cancellations succeeded - check if stock is corrupted
+            const finalProduct = await helper.prisma.product.findUnique({ where: { id: product.id } });
+            console.log(`   Stock after double cancellation: ${finalProduct?.qty} (expected: 100, would be 102 if race)`);
+          }
+        }
+      }
+
+      console.log(`\n📊 Test de contrôle sur ${totalAttempts} essais:`);
+      console.log(`   ✅ Comportement atomique: ${atomicSuccesses}/${totalAttempts}`);
+      console.log(`   ❌ Race condition détectée: ${raceConditionDetected ? 'OUI' : 'NON'}`);
+
+      // With atomic code, ALL attempts should succeed (1 success, 1 conflict)
+      // With non-atomic code, at least ONE attempt should show race condition
+      expect(atomicSuccesses).toBe(30);
+      expect(raceConditionDetected).toBe(false);
+    }, 180000); // 3 minutes timeout
   });
 
   describe('sales.create() - concurrent sales of last item', () => {
-    it('should allow only one sale when qty=1 and two concurrent requests', async () => {
-      // Setup
-      const tenant = await helper.createTestTenant();
-      const admin = await helper.createTestAdmin(tenant.id);
-      const category = await helper.createTestCategory(tenant.id);
-      const product = await helper.createTestProduct(tenant.id, category.id, {
-        qty: 1, // Only one item left
-        priceSell: 100,
-        priceBuy: 50,
-      });
+    it('should allow only one sale when qty=1 over multiple attempts', async () => {
+      let atomicSuccesses = 0;
 
-      // Simulate concurrent sales
-      const createSale = async () => {
-        return helper.prisma.$transaction(async (tx) => {
-          const newSale = await tx.sale.create({
-            data: {
-              tenantId: tenant.id,
-              total: 100,
-              paymentMethod: 'CASH',
-              status: 'COMPLETED',
-              createdBy: admin.id,
-              items: {
-                create: [
-                  {
-                    productId: product.id,
-                    qty: 1,
-                    priceSell: 100,
-                    costPriceAtSale: 50,
-                  },
-                ],
-              },
-            },
-          });
-
-          // Atomic stock decrement
-          const affected = await tx.$executeRaw`
-            UPDATE products SET qty = qty - 1
-            WHERE id = ${product.id} AND tenant_id = ${tenant.id} AND qty >= 1
-          `;
-
-          if (affected === 0) {
-            throw new Error('Insufficient stock');
-          }
-
-          return newSale;
+      // Run 10 attempts
+      for (let i = 0; i < 10; i++) {
+        const tenant = await helper.createTestTenant(`Shop ${i}`);
+        const admin = await helper.createTestAdmin(tenant.id, `admin${i}@test.com`);
+        const category = await helper.createTestCategory(tenant.id, `Category ${i}`);
+        const product = await helper.createTestProduct(tenant.id, category.id, {
+          name: `Product ${i}`,
+          reference: `REF-${Date.now()}-${i}`,
+          qty: 1, // Only one item left
+          priceSell: 100,
+          priceBuy: 50,
         });
-      };
 
-      // Two concurrent sales
-      const results = await Promise.allSettled([
-        createSale(),
-        createSale(),
-      ]);
+        // Two concurrent sales using REAL service
+        const results = await Promise.allSettled([
+          helper.salesService.create(tenant.id, admin.id, {
+            paymentMethod: 'CASH',
+            notes: undefined,
+            items: [{ productId: product.id, qty: 1, priceSell: 100 }],
+          }),
+          helper.salesService.create(tenant.id, admin.id, {
+            paymentMethod: 'CASH',
+            notes: undefined,
+            items: [{ productId: product.id, qty: 1, priceSell: 100 }],
+          }),
+        ]);
 
-      // One should succeed, one should fail
-      const succeeded = results.filter(r => r.status === 'fulfilled').length;
-      const failed = results.filter(r => r.status === 'rejected').length;
+        // One should succeed, one should fail
+        const succeeded = results.filter(r => r.status === 'fulfilled').length;
+        const failed = results.filter(r => r.status === 'rejected').length;
 
-      expect(succeeded).toBe(1);
-      expect(failed).toBe(1);
+        if (succeeded === 1 && failed === 1) {
+          atomicSuccesses++;
 
-      // Check final stock
-      const finalProduct = await helper.prisma.product.findUnique({ where: { id: product.id } });
-      expect(finalProduct?.qty).toBe(0);
+          // Check final stock
+          const finalProduct = await helper.prisma.product.findUnique({ where: { id: product.id } });
+          expect(finalProduct?.qty).toBe(0);
 
-      // Check only one sale was created
-      const salesCount = await helper.prisma.sale.count({ where: { tenantId: tenant.id } });
-      expect(salesCount).toBe(1);
-    });
+          // Check only one sale was created
+          const salesCount = await helper.prisma.sale.count({ where: { tenantId: tenant.id } });
+          expect(salesCount).toBe(1);
+        }
+      }
+
+      console.log(`\n📊 Test create() sur 10 essais: ${atomicSuccesses}/10 atomiques`);
+      expect(atomicSuccesses).toBe(10);
+    }, 120000); // 2 minutes timeout
   });
 });
