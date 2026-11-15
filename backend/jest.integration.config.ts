@@ -1,4 +1,4 @@
-﻿import type { Config } from 'jest';
+import type { Config } from 'jest';
 
 const config: Config = {
   moduleFileExtensions: ['js', 'json', 'ts'],
@@ -9,6 +9,7 @@ const config: Config = {
     '^.+\\.(t|j)s$': 'ts-jest',
   },
   testTimeout: 30000,
+  maxWorkers: 1,
   globalSetup: '<rootDir>/test/integration-setup.ts',
   globalTeardown: '<rootDir>/test/integration-teardown.ts',
 };

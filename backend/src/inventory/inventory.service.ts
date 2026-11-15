@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ActivityLogsService } from '../activity-logs/activity-logs.service';
@@ -143,24 +144,40 @@ export class InventoryService {
 
   // ─── POST /api/inventory/:id/validate ────────────────────────────────────────
   async validate(tenantId: string, userId: string, id: string) {
-    const session = await this.prisma.inventorySession.findFirst({
-      where: { id, tenantId },
-      include: { items: true },
-    });
-
-    if (!session)
-      throw new NotFoundException("Session d'inventaire non trouvée");
-    if (session.status === 'VALIDATED') {
-      throw new BadRequestException('Cette session a déjà été validée');
-    }
+    let sessionItems: any[];
 
     await this.prisma.$transaction(async (tx) => {
-      for (const item of session.items) {
+      // Transition atomique: DRAFT -> VALIDATED
+      const result = await tx.inventorySession.updateMany({
+        where: { id, tenantId, status: 'DRAFT' },
+        data: { status: 'VALIDATED' },
+      });
+
+      if (result.count === 0) {
+        const session = await tx.inventorySession.findFirst({ where: { id, tenantId } });
+        if (!session) {
+          throw new NotFoundException('Session d\'inventaire non trouvée');
+        }
+        throw new ConflictException(
+          'Cette session ne peut pas être validée (déjà validée ou statut invalide)',
+        );
+      }
+
+      // Récupérer les items après transition réussie
+      const session = await tx.inventorySession.findUnique({
+        where: { id },
+        include: { items: true },
+      });
+      if (!session) throw new NotFoundException('Session introuvable après transition');
+      sessionItems = session.items;
+
+      // Appliquer les ajustements de stock de manière atomique
+      for (const item of sessionItems) {
         if (item.difference === 0) continue;
 
         // Vérifier que l'ajustement ne rendra pas qty négatif
         const product = await tx.product.findFirst({
-          where: { id: item.productId },
+          where: { id: item.productId, tenantId },
           select: { qty: true, name: true },
         });
         const newQty = (product?.qty ?? 0) + item.difference;
@@ -171,25 +188,13 @@ export class InventoryService {
         }
 
         await tx.product.update({
-          where: { id: item.productId },
+          where: { id: item.productId, tenantId },
           data: { qty: { increment: item.difference } },
         });
       }
-
-      await tx.inventorySession.update({
-        where: { id },
-        data: { status: 'VALIDATED' },
-      });
     });
 
-    await this.activityLogs.log(
-      tenantId,
-      userId,
-      'INVENTORY_VALIDATE',
-      'inventory_session',
-      id,
-    );
-
+    await this.activityLogs.log(tenantId, userId, 'INVENTORY_VALIDATE', 'inventory_session', id);
     return this.findOne(tenantId, id);
   }
 }

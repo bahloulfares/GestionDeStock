@@ -3,15 +3,17 @@
 export default async function globalSetup() {
   console.log('\n🔧 Setting up integration tests...');
   
-  // Apply migrations to test database
-  process.env.DATABASE_URL = 'postgresql://mvp_user:mvp_secret_2026@localhost:5433/mvp_test?schema=public';
+  // Use DATABASE_URL_TEST with fallback
+  const dbUrl = process.env.DATABASE_URL_TEST || process.env.DATABASE_URL || 'postgresql://mvp_user:mvp_secret_2026@localhost:5433/mvp_test?schema=public';
+  
+  console.log(`Using database: ${dbUrl.replace(/:[^:@]+@/, ':****@')}`);
   
   try {
     execSync('npx prisma migrate deploy', {
       stdio: 'inherit',
-      env: { ...process.env, DATABASE_URL: process.env.DATABASE_URL },
+      env: { ...process.env, DATABASE_URL: dbUrl },
     });
-    console.log('✅ Migrations applied to mvp_test');
+    console.log('✅ Migrations applied');
   } catch (error) {
     console.error('❌ Failed to apply migrations:', error);
     throw error;

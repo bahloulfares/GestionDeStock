@@ -1,5 +1,5 @@
-import { Test } from '@nestjs/testing';
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+﻿import { Test } from '@nestjs/testing';
+import { BadRequestException, NotFoundException, ConflictException } from '@nestjs/common';
 import { InventoryService } from './inventory.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ActivityLogsService } from '../activity-logs/activity-logs.service';
@@ -7,7 +7,7 @@ import { ActivityLogsService } from '../activity-logs/activity-logs.service';
 function buildPrisma() {
   const tx = {
     product: { findFirst: jest.fn(), update: jest.fn() },
-    inventorySession: { update: jest.fn() },
+    inventorySession: { update: jest.fn(), updateMany: jest.fn(), findFirst: jest.fn(), findUnique: jest.fn() },
   };
   return {
     product: { findFirst: jest.fn() },
@@ -16,6 +16,8 @@ function buildPrisma() {
       findFirst: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
+      updateMany: jest.fn(),
+      findUnique: jest.fn(),
     },
     inventoryItem: {},
     $transaction: jest.fn((fn) => fn(tx)),
@@ -82,27 +84,28 @@ describe('InventoryService.validate', () => {
   });
 
   it('NotFoundException si session introuvable', async () => {
-    prisma.inventorySession.findFirst.mockResolvedValue(null);
+    prisma._tx.inventorySession.updateMany.mockResolvedValue({ count: 0 });
+    prisma._tx.inventorySession.findFirst.mockResolvedValue(null);
     await expect(service.validate('t1', 'u1', 'bad-id')).rejects.toThrow(
       NotFoundException,
     );
   });
 
-  it('BadRequestException si deja VALIDATED', async () => {
-    prisma.inventorySession.findFirst.mockResolvedValue({
+  it('ConflictException si deja VALIDATED', async () => {
+    prisma._tx.inventorySession.updateMany.mockResolvedValue({ count: 0 });
+    prisma._tx.inventorySession.findFirst.mockResolvedValue({
       id: 's1',
       status: 'VALIDATED',
-      items: [],
     });
     await expect(service.validate('t1', 'u1', 's1')).rejects.toThrow(
-      BadRequestException,
+      ConflictException,
     );
   });
 
   it('BadRequestException si ajustement rendrait le stock negatif', async () => {
-    prisma.inventorySession.findFirst.mockResolvedValue({
+    prisma._tx.inventorySession.updateMany.mockResolvedValue({ count: 1 });
+    prisma._tx.inventorySession.findUnique.mockResolvedValue({
       id: 's1',
-      status: 'DRAFT',
       items: [{ productId: 'p1', difference: -99 }],
     });
     prisma._tx.product.findFirst.mockResolvedValue({ qty: 5, name: 'Prod' });
@@ -111,33 +114,33 @@ describe('InventoryService.validate', () => {
     );
   });
 
-  it('valide et applique les ajustements de stock', async () => {
-    prisma.inventorySession.findFirst
-      .mockResolvedValueOnce({
-        id: 's1',
-        status: 'DRAFT',
-        items: [{ productId: 'p1', difference: 3 }],
-      })
-      .mockResolvedValueOnce({
-        id: 's1',
-        status: 'VALIDATED',
-        tenantId: 't1',
-        date: new Date(),
-        notes: null,
-        createdBy: 'u1',
-        createdAt: new Date(),
-        items: [],
-      });
+  it('valide et applique les ajustements de stock de maniere atomique', async () => {
+    prisma._tx.inventorySession.updateMany.mockResolvedValue({ count: 1 });
+    prisma._tx.inventorySession.findUnique.mockResolvedValue({
+      id: 's1',
+      items: [{ productId: 'p1', difference: 3 }],
+    });
     prisma._tx.product.findFirst.mockResolvedValue({ qty: 10, name: 'Prod' });
+    prisma.inventorySession.findFirst.mockResolvedValue({
+      id: 's1',
+      status: 'VALIDATED',
+      tenantId: 't1',
+      date: new Date(),
+      notes: null,
+      createdBy: 'u1',
+      createdAt: new Date(),
+      items: [],
+    });
     await service.validate('t1', 'u1', 's1');
+    expect(prisma._tx.inventorySession.updateMany).toHaveBeenCalledWith({
+      where: { id: 's1', tenantId: 't1', status: 'DRAFT' },
+      data: { status: 'VALIDATED' },
+    });
     expect(prisma._tx.product.update).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { id: 'p1' },
+        where: { id: 'p1', tenantId: 't1' },
         data: { qty: { increment: 3 } },
       }),
-    );
-    expect(prisma._tx.inventorySession.update).toHaveBeenCalledWith(
-      expect.objectContaining({ data: { status: 'VALIDATED' } }),
     );
   });
 });

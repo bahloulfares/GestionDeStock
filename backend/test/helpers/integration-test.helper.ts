@@ -1,18 +1,50 @@
-ï»¿import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
 import * as bcrypt from 'bcrypt';
+import { ActivityLogsService } from '../../src/activity-logs/activity-logs.service';
+import { SalesService } from '../../src/sales/sales.service';
+import { PdfService } from '../../src/pdf/pdf.service';
+import { ReturnsService } from '../../src/returns/returns.service';
+import { PurchasesService } from '../../src/purchases/purchases.service';
+import { InventoryService } from '../../src/inventory/inventory.service';
 
-const DATABASE_URL = process.env.DATABASE_URL || 'postgresql://mvp_user:mvp_secret_2026@localhost:5433/mvp_test?schema=public';
+const DATABASE_URL = process.env.DATABASE_URL_TEST || process.env.DATABASE_URL || 'postgresql://mvp_user:mvp_secret_2026@localhost:5433/mvp_test?schema=public';
 
 export class IntegrationTestHelper {
   private pool: Pool;
   public prisma: PrismaClient;
+  public salesService!: SalesService;
+  public returnsService!: ReturnsService;
+  public purchasesService!: PurchasesService;
+  public inventoryService!: InventoryService;
 
   constructor() {
+    // Garde-fou: vérifier que la base est bien une base de test
+    const dbName = this.extractDatabaseName(DATABASE_URL);
+    if (!dbName.endsWith('_test') && dbName !== 'mvp_test') {
+      throw new Error(
+        'SECURITE: Refus d executer sur la base "' + dbName + '". Seules les bases se terminant par "_test" ou nommees "mvp_test" sont autorisees.'
+      );
+    }
     this.pool = new Pool({ connectionString: DATABASE_URL });
     const adapter = new PrismaPg(this.pool);
     this.prisma = new PrismaClient({ adapter });
+  }
+
+  private extractDatabaseName(url: string): string {
+    const match = url.match(/\/([^/?]+)(\?|$)/);
+    return match ? match[1] : '';
+  }
+
+  async initializeServices() {
+    const activityLogsService = new ActivityLogsService(this.prisma as any);
+    const pdfService = new PdfService();
+    
+    this.salesService = new SalesService(this.prisma as any, activityLogsService, pdfService);
+    this.returnsService = new ReturnsService(this.prisma as any, activityLogsService);
+    this.purchasesService = new PurchasesService(this.prisma as any, activityLogsService, pdfService);
+    this.inventoryService = new InventoryService(this.prisma as any, activityLogsService);
   }
 
   async cleanup() {
@@ -56,7 +88,7 @@ export class IntegrationTestHelper {
   }
 
   async createTestAdmin(tenantId: string, email: string = 'admin@test.com') {
-    const passwordHash = await bcrypt.hash('Password123!', 12);
+    const passwordHash = await bcrypt.hash(process.env.TEST_PASSWORD || 'CHANGE_ME_TestPass123!', 12);
     const admin = await this.prisma.user.create({
       data: {
         tenantId,
@@ -71,7 +103,7 @@ export class IntegrationTestHelper {
   }
 
   async createTestEmployee(tenantId: string, email: string = 'employee@test.com') {
-    const passwordHash = await bcrypt.hash('Password123!', 12);
+    const passwordHash = await bcrypt.hash(process.env.TEST_PASSWORD || 'CHANGE_ME_TestPass123!', 12);
     const employee = await this.prisma.user.create({
       data: {
         tenantId,

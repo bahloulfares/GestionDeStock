@@ -53,5 +53,5 @@ jobs:
       - name: Integration Tests
         run: npm run test:integration
         env:
-          DATABASE_URL: postgresql://mvp_user:mvp_secret_2026@localhost:5432/mvp_test?schema=public
-
+          DATABASE_URL_TEST: postgresql://mvp_user:mvp_secret_2026@localhost:5432/mvp_test?schema=public
+          TEST_PASSWORD: CI_TestPassword123!
