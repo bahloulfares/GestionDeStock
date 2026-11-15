@@ -23,7 +23,8 @@
                     "prisma:migrate":  "prisma migrate dev",
                     "prisma:studio":  "prisma studio",
                     "seed":  "ts-node prisma/seed.ts",
-                    "create-super-admin":  "ts-node -r tsconfig-paths/register src/scripts/create-super-admin.ts"
+                    "create-super-admin":  "ts-node -r tsconfig-paths/register src/scripts/create-super-admin.ts",
+                    "lint:ci":  "eslint \"{src,apps,libs,test}/**/*.ts\""
                 },
     "prisma":  {
                    "seed":  "ts-node prisma/seed.ts"
