@@ -83,10 +83,10 @@ export class ReturnsService {
           where: { id, tenantId } 
         });
         if (!saleReturn) {
-          throw new NotFoundException('Retour non trouvé');
+          throw new NotFoundException('Retour non trouvÃ©');
         }
         throw new ConflictException(
-          'Ce retour ne peut pas être validé (déjà validé ou rejeté)',
+          'Ce retour ne peut pas Ãªtre validÃ© (dÃ©jÃ  validÃ© ou rejetÃ©)',
         );
       }
 
@@ -95,7 +95,7 @@ export class ReturnsService {
         where: { id },
         include: { items: true },
       });
-      if (!saleReturn) throw new NotFoundException('Retour introuvable après transition');
+      if (!saleReturn) throw new NotFoundException('Retour introuvable aprÃ¨s transition');
       returnItems = saleReturn.items;
 
       // Apply stock updates only after atomic status transition succeeded
@@ -131,10 +131,10 @@ export class ReturnsService {
         where: { id, tenantId } 
       });
       if (!saleReturn) {
-        throw new NotFoundException('Retour non trouvé');
+        throw new NotFoundException('Retour non trouvÃ©');
       }
       throw new ConflictException(
-        'Ce retour ne peut pas être rejeté (déjà validé ou rejeté)',
+        'Ce retour ne peut pas Ãªtre rejetÃ© (dÃ©jÃ  validÃ© ou rejetÃ©)',
       );
     }
 

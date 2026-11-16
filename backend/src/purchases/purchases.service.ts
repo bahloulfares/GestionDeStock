@@ -180,10 +180,10 @@ export class PurchasesService {
           where: { id, tenantId } 
         });
         if (!order) {
-          throw new NotFoundException('Bon de commande non trouv�');
+          throw new NotFoundException('Bon de commande non trouvé');
         }
         throw new ConflictException(
-          'Ce bon de commande ne peut pas �tre valid� (d�j� valid� ou annul�)',
+          'Ce bon de commande ne peut pas être validé (déjà validé ou annulé)',
         );
       }
 
@@ -192,7 +192,7 @@ export class PurchasesService {
         where: { id },
         include: { items: true },
       });
-      if (!order) throw new NotFoundException('Bon de commande introuvable apr�s transition');
+      if (!order) throw new NotFoundException('Bon de commande introuvable après transition');
       orderItems = order.items;
 
       // Apply stock updates only after atomic status transition succeeded
@@ -228,15 +228,15 @@ export class PurchasesService {
         where: { id, tenantId }
       });
       if (!order) {
-        throw new NotFoundException('Bon de commande non trouv�');
+        throw new NotFoundException('Bon de commande non trouvé');
       }
       if (order.status === 'VALIDATED') {
         throw new BadRequestException(
-          "Impossible d'annuler un bon de commande d�j� valid�",
+          "Impossible d'annuler un bon de commande déjà validé",
         );
       }
       throw new ConflictException(
-        'Ce bon de commande ne peut pas �tre annul� (conflit de statut)',
+        'Ce bon de commande ne peut pas être annulé (conflit de statut)',
       );
     }
 
@@ -248,7 +248,7 @@ export class PurchasesService {
       id,
     );
 
-    return { message: 'Bon de commande annul� avec succ�s' };
+    return { message: 'Bon de commande annulé avec succès' };
   }
 
   // ─── DELETE /api/purchase-orders/:id ────────────────────────────────────────
