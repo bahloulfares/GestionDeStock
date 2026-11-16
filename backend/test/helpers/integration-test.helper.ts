@@ -20,7 +20,7 @@ export class IntegrationTestHelper {
   public inventoryService!: InventoryService;
 
   constructor() {
-    // Garde-fou: vérifier que la base est bien une base de test
+    // Garde-fou: vÃ©rifier que la base est bien une base de test
     const dbName = this.extractDatabaseName(DATABASE_URL);
     if (!dbName.endsWith('_test') && dbName !== 'mvp_test') {
       throw new Error(

@@ -22,7 +22,7 @@ export class CreateUserDto {
   @ApiPropertyOptional({ enum: [UserRole.ADMIN, UserRole.EMPLOYEE], default: UserRole.EMPLOYEE })
   @IsOptional()
   @IsIn([UserRole.ADMIN, UserRole.EMPLOYEE], {
-    message: 'Le rôle doit être ADMIN ou EMPLOYEE',
+    message: 'Le rÃ´le doit Ãªtre ADMIN ou EMPLOYEE',
   })
   role?: UserRole;
 }

@@ -45,7 +45,7 @@ describe('UsersService', () => {
 
       await expect(service.create('tenant-id', dto)).rejects.toThrow(ForbiddenException);
       await expect(service.create('tenant-id', dto)).rejects.toThrow(
-        'Le rôle SUPER_ADMIN ne peut pas être attribué depuis une boutique',
+        'Le rÃ´le SUPER_ADMIN ne peut pas Ãªtre attribuÃ© depuis une boutique',
       );
     });
 
@@ -62,7 +62,7 @@ describe('UsersService', () => {
 
       await expect(service.create('tenant-id', dto)).rejects.toThrow(BadRequestException);
       await expect(service.create('tenant-id', dto)).rejects.toThrow(
-        "Limite d'utilisateurs atteinte (5). Passez à un plan supérieur.",
+        "Limite d'utilisateurs atteinte (5). Passez Ã  un plan supÃ©rieur.",
       );
     });
 
@@ -114,7 +114,7 @@ describe('UsersService', () => {
         ForbiddenException,
       );
       await expect(service.update('tenant-id', 'user-id', dto, 'current-user-id')).rejects.toThrow(
-        'Le rôle SUPER_ADMIN ne peut pas être attribué depuis une boutique',
+        'Le rÃ´le SUPER_ADMIN ne peut pas Ãªtre attribuÃ© depuis une boutique',
       );
     });
 
@@ -135,7 +135,7 @@ describe('UsersService', () => {
 
       await expect(service.update('tenant-id', 'user-id', dto, 'user-id')).rejects.toThrow(BadRequestException);
       await expect(service.update('tenant-id', 'user-id', dto, 'user-id')).rejects.toThrow(
-        'Vous ne pouvez pas vous désactiver vous-même',
+        'Vous ne pouvez pas vous dÃ©sactiver vous-mÃªme',
       );
     });
 
@@ -156,7 +156,7 @@ describe('UsersService', () => {
 
       await expect(service.update('tenant-id', 'user-id', dto, 'user-id')).rejects.toThrow(BadRequestException);
       await expect(service.update('tenant-id', 'user-id', dto, 'user-id')).rejects.toThrow(
-        'Vous ne pouvez pas modifier votre propre rôle',
+        'Vous ne pouvez pas modifier votre propre rÃ´le',
       );
     });
 
@@ -180,7 +180,7 @@ describe('UsersService', () => {
         BadRequestException,
       );
       await expect(service.update('tenant-id', 'user-id', dto, 'other-user-id')).rejects.toThrow(
-        'Impossible de désactiver ou rétrograder le dernier administrateur actif',
+        'Impossible de dÃ©sactiver ou rÃ©trograder le dernier administrateur actif',
       );
     });
 
@@ -204,7 +204,7 @@ describe('UsersService', () => {
         BadRequestException,
       );
       await expect(service.update('tenant-id', 'user-id', dto, 'other-user-id')).rejects.toThrow(
-        'Impossible de désactiver ou rétrograder le dernier administrateur actif',
+        'Impossible de dÃ©sactiver ou rÃ©trograder le dernier administrateur actif',
       );
     });
 

@@ -39,24 +39,24 @@ export class UsersService {
 
   // --- POST /api/users ---------------------------------------------------------
   async create(tenantId: string, dto: CreateUserDto) {
-    // Défense en profondeur : SUPER_ADMIN interdit
+    // DÃ©fense en profondeur : SUPER_ADMIN interdit
     if (dto.role === UserRole.SUPER_ADMIN) {
       throw new ForbiddenException(
-        'Le rôle SUPER_ADMIN ne peut pas être attribué depuis une boutique',
+        'Le rÃ´le SUPER_ADMIN ne peut pas Ãªtre attribuÃ© depuis une boutique',
       );
     }
 
-    // Vérifier unicité email dans le tenant
+    // VÃ©rifier unicitÃ© email dans le tenant
     const existing = await this.prisma.user.findUnique({
       where: { tenantId_email: { tenantId, email: dto.email } },
     });
     if (existing) {
       throw new ConflictException(
-        'Un utilisateur avec cet email existe déjà dans ce tenant',
+        'Un utilisateur avec cet email existe dÃ©jÃ  dans ce tenant',
       );
     }
 
-    // Vérifier maxUsers du tenant
+    // VÃ©rifier maxUsers du tenant
     const tenant = await this.prisma.tenant.findUnique({
       where: { id: tenantId },
       select: { maxUsers: true },
@@ -70,7 +70,7 @@ export class UsersService {
     });
     if (currentUsersCount >= tenant.maxUsers) {
       throw new BadRequestException(
-        `Limite d'utilisateurs atteinte (${tenant.maxUsers}). Passez à un plan supérieur.`,
+        `Limite d'utilisateurs atteinte (${tenant.maxUsers}). Passez Ã  un plan supÃ©rieur.`,
       );
     }
 
@@ -83,7 +83,7 @@ export class UsersService {
         passwordHash,
         role: dto.role ?? UserRole.EMPLOYEE,
         isActive: true,
-        isVerified: true, // Les comptes créés par admin sont directement vérifiés
+        isVerified: true, // Les comptes crÃ©Ã©s par admin sont directement vÃ©rifiÃ©s
       },
       select: userSelect,
     });
@@ -96,30 +96,30 @@ export class UsersService {
     dto: UpdateUserDto,
     currentUserId: string,
   ) {
-    // Défense en profondeur : SUPER_ADMIN interdit
+    // DÃ©fense en profondeur : SUPER_ADMIN interdit
     if (dto.role === UserRole.SUPER_ADMIN) {
       throw new ForbiddenException(
-        'Le rôle SUPER_ADMIN ne peut pas être attribué depuis une boutique',
+        'Le rÃ´le SUPER_ADMIN ne peut pas Ãªtre attribuÃ© depuis une boutique',
       );
     }
 
-    // Vérifier ownership tenant
+    // VÃ©rifier ownership tenant
     const user = await this.prisma.user.findFirst({
       where: { id, tenantId },
       select: { ...userSelect, role: true, isActive: true },
     });
     if (!user) {
-      throw new NotFoundException('Utilisateur non trouvé');
+      throw new NotFoundException('Utilisateur non trouvÃ©');
     }
 
-    // Empêcher auto-désactivation
+    // EmpÃªcher auto-dÃ©sactivation
     if (id === currentUserId && dto.isActive === false) {
       throw new BadRequestException(
-        'Vous ne pouvez pas vous désactiver vous-même',
+        'Vous ne pouvez pas vous dÃ©sactiver vous-mÃªme',
       );
     }
 
-    // Empêcher auto-rétrogradation si ADMIN
+    // EmpÃªcher auto-rÃ©trogradation si ADMIN
     if (
       id === currentUserId &&
       user.role === UserRole.ADMIN &&
@@ -127,11 +127,11 @@ export class UsersService {
       dto.role !== UserRole.ADMIN
     ) {
       throw new BadRequestException(
-        'Vous ne pouvez pas modifier votre propre rôle',
+        'Vous ne pouvez pas modifier votre propre rÃ´le',
       );
     }
 
-    // Empêcher de laisser la boutique sans ADMIN actif
+    // EmpÃªcher de laisser la boutique sans ADMIN actif
     if (
       (dto.role !== undefined &&
         dto.role !== UserRole.ADMIN &&
@@ -141,14 +141,14 @@ export class UsersService {
       const activeAdminsCount = await this.prisma.user.count({
         where: { tenantId, role: UserRole.ADMIN, isActive: true },
       });
-      // Si on désactive ou rétrograde le seul ADMIN actif
+      // Si on dÃ©sactive ou rÃ©trograde le seul ADMIN actif
       if (
         activeAdminsCount === 1 &&
         user.role === UserRole.ADMIN &&
         user.isActive
       ) {
         throw new BadRequestException(
-          'Impossible de désactiver ou rétrograder le dernier administrateur actif',
+          'Impossible de dÃ©sactiver ou rÃ©trograder le dernier administrateur actif',
         );
       }
     }
@@ -163,13 +163,13 @@ export class UsersService {
     });
   }
 
-  // --- Méthode interne: trouver un user par id/tenant --------------------------
+  // --- MÃ©thode interne: trouver un user par id/tenant --------------------------
   async findById(tenantId: string, id: string) {
     const user = await this.prisma.user.findFirst({
       where: { id, tenantId },
       select: userSelect,
     });
-    if (!user) throw new NotFoundException('Utilisateur non trouvé');
+    if (!user) throw new NotFoundException('Utilisateur non trouvÃ©');
     return user;
   }
 }
