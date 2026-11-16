@@ -1,87 +1,85 @@
-# Phase 0 - Reliability Audit: Test Results
+# Phase 0 - Atomic Transitions: Test Results
 
-## Executive Summary
+## Summary
 
-All atomic transition tests **PASSED** with 10/10 success rate, proving that concurrent operations on `product.qty` are safe and correct.
+Fixed double-click protection for returns and purchases operations. All atomic transition tests now pass with 20/20 success rate.
 
-## Test Results
+## Red/Green Cycle Results
 
-### B1: sales.create() - PASSED ?
-- **Property**: B1.C1 - Atomically decrements product.qty
-- **Test**: 10/10 successes (concurrent sales of last item)
-- **Proof**: 
-  - WITH atomic condition `AND qty >= ${item.qty}`: 10/10 ?
-  - WITHOUT atomic condition: 0/10 ?
-- **Conclusion**: The WHERE clause conditional is ESSENTIAL for atomicity
+### returns.validate() - FIXED ?
+- **RED phase**: Test failed 0/20 (proved bug exists)
+- **GREEN phase**: Test passed 20/20 after fix
+- **Fix**: Changed to `updateMany` with `WHERE status='PENDING'`
+- **Behavior**: ConflictException if already validated/rejected
 
-### B2: returns.validate() - PASSED ?
-- **Property**: B2.C1 - Atomically increments product.qty when items returned to stock
-- **Test**: 10/10 successes (concurrent return validations)
-- **Implementation**: Uses Prisma `{ increment: item.qty }`
-- **Conclusion**: Stock restoration is atomic and safe
+### returns.reject() - FIXED ?
+- **Fix**: Changed to `updateMany` with `WHERE status='PENDING'`
+- **Cross-test** (validate vs reject): 20/20 ?
+- **Behavior**: ConflictException if already validated/rejected
 
-### B3: returns.reject() - N/A ??
-- **Property**: B3.C1 - N/A (no stock effect)
-- **Reason**: `reject()` only changes status to REJECTED, does not touch product.qty
-- **Test**: Not applicable
+### purchases.validate() - FIXED ?
+- **RED phase**: Test failed 0/20 (proved bug exists)
+- **GREEN phase**: Test passed 20/20 after fix
+- **Fix**: Changed to `updateMany` with `WHERE status='DRAFT'`
+- **Behavior**: ConflictException if already validated/cancelled
 
-### B4: purchases.validate() - PASSED ?
-- **Property**: B4.C1 - Atomically increments product.qty
-- **Test**: 10/10 successes (concurrent purchase order validations)
-- **Implementation**: Uses Prisma `{ increment: item.qty }`
-- **Conclusion**: Stock increase from purchases is atomic and safe
+### purchases.cancel() - FIXED ?
+- **Fix**: Changed to `updateMany` with `WHERE status='DRAFT'`
+- **Cross-test** (validate vs cancel): 20/20 ?
+- **Behavior**: ConflictException or BadRequestException depending on final status
 
-### B5: purchases.cancel() - N/A ??
-- **Property**: B5.C1 - N/A (no stock effect)
-- **Reason**: `cancel()` only changes status to CANCELLED, does not reverse validated purchases
-- **Test**: Not applicable
-
-### B6: inventory.validate() - PASSED ?
-- **Property**: B6.C1 - Atomically adjusts product.qty (positive or negative)
-- **Test**: 10/10 successes (concurrent inventory adjustments)
-- **Implementation**: Uses Prisma `{ increment: item.difference }` where difference can be ±
-- **Conclusion**: Inventory adjustments are atomic and safe
-
-## Critical Findings
-
-### 1. Atomic WHERE Conditions Are Essential
-The test for B1 proved that removing `AND qty >= ${item.qty}` from the WHERE clause causes race conditions:
-- With condition: 10/10 atomic ?
-- Without condition: 0/10 atomic ?
-
-This validates the design decision to use conditional UPDATEs.
-
-### 2. Prisma's `increment` Operation Is Safe
-All increment/decrement operations (`B2, B4, B6`) passed with 10/10 success rate, confirming that Prisma correctly translates `{ increment: N }` to atomic SQL operations.
-
-### 3. Status-Only Transitions Don't Need Stock Tests
-Operations that only change status (`B3, B5`) don't affect `product.qty` and therefore don't need atomicity tests on stock.
+### inventory.validate() - ALREADY CORRECT ?
+- **Test**: Passed 20/20 immediately
+- **Code**: Already uses `updateMany` with `WHERE status='DRAFT'`
+- **Behavior**: ConflictException if already validated
 
 ## Test Coverage
 
 ```
-4 atomic transitions tested
-4 / 4 passed (100%)
-6 / 6 correctness properties validated
+Operation              | Double-Click | Cross-Test | Status
+---------------------- | ------------ | ---------- | ------
+returns.validate()     | 20/20 ?     | 20/20 ?   | FIXED
+returns.reject()       | -            | 20/20 ?   | FIXED
+purchases.validate()   | 20/20 ?     | 20/20 ?   | FIXED
+purchases.cancel()     | -            | 20/20 ?   | FIXED
+inventory.validate()   | 20/20 ?     | -          | WAS OK
 ```
 
-## Recommendations
+## Key Findings
 
-1. **Maintain WHERE Conditions**: Never remove the conditional checks from UPDATE statements
-2. **Keep Using Transactions**: All operations correctly use `$transaction`
-3. **Monitor in Production**: Add metrics for concurrent operation conflicts
-4. **Document Pattern**: Use this atomic pattern for future stock-affecting operations
+### 1. Atomic Status Transitions Work
+All operations now use `updateMany` with conditional WHERE clause:
+```typescript
+const result = await tx.MODEL.updateMany({
+  where: { id, tenantId, status: 'EXPECTED_STATUS' },
+  data: { status: 'NEW_STATUS' }
+});
 
-## Files Changed
+if (result.count === 0) {
+  // Check if exists ? NotFoundException
+  // Else ? ConflictException
+}
+```
 
-- `test/sales-atomic-transitions.integration-spec.ts` - B1.C1
-- `test/returns-atomic-transitions.integration-spec.ts` - B2.C1
-- `test/purchases-atomic-transitions.integration-spec.ts` - B4.C1
-- `test/inventory-atomic-transitions.integration-spec.ts` - B6.C1
-- `test/helpers/integration-test.helper.ts` - Added `createTestSupplier()`
+### 2. Stock Updates After Transition
+Stock changes only happen AFTER the atomic status transition succeeds. This ensures:
+- No duplicate stock adjustments
+- Consistent state (status + stock always match)
 
-## Conclusion
+### 3. Proper Exception Types
+- **NotFoundException**: Document doesn't exist
+- **ConflictException**: Concurrent modification (double-click, race condition)
+- **BadRequestException**: Business rule violation (e.g., can't cancel validated purchase)
 
-? **Phase 0 Reliability Audit: COMPLETE**
+## Commits
 
-All critical atomic transitions have been verified. The system correctly handles concurrent operations on product inventory without race conditions.
+- `d922f71` - inventory.validate() proof (already atomic)
+- `593a8db` - purchases.validate/cancel fix
+- `0ad6e5b` - returns.validate/reject fix
+- `fe55691` - revert invalid tests (tested different documents, not same document twice)
+
+## Next Steps
+
+Waiting for CI verification of pushed commits.
+
+Then: B2 additional rules (return quantities, cancelled sales, etc.)
