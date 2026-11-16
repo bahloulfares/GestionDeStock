@@ -36,6 +36,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Check UTF-8 encoding
+        working-directory: backend
+        run: |
+          echo "Checking UTF-8 encoding for TypeScript files..."
+          invalid_files=()
+          while IFS= read -r file; do
+            if ! iconv -f utf-8 -t utf-8 "$file" > /dev/null 2>&1; then
+              invalid_files+=("$file")
+              echo "❌ Invalid UTF-8: $file"
+            fi
+          done < <(find src test -name "*.ts" -type f)
+          
+          if [ ${#invalid_files[@]} -gt 0 ]; then
+            echo ""
+            echo "Found ${#invalid_files[@]} file(s) with invalid UTF-8 encoding"
+            exit 1
+          fi
+          echo "✅ All TypeScript files are valid UTF-8"
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
