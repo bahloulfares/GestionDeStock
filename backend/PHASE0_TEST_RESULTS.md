@@ -1,54 +1,65 @@
-# Phase 0 - Atomic Transitions: Test Results
+﻿# Phase 0 - Atomic Transitions: Proven Results
 
-## Summary
+## What Was Proven
 
-Fixed double-click protection for returns and purchases operations. All atomic transition tests now pass with 20/20 success rate.
+### returns.validate() - FIXED
+**Commit**: 0ad6e5b
 
-## Red/Green Cycle Results
-
-### returns.validate() - FIXED ?
-- **RED phase**: Test failed 0/20 (proved bug exists)
-- **GREEN phase**: Test passed 20/20 after fix
-- **Fix**: Changed to `updateMany` with `WHERE status='PENDING'`
-- **Behavior**: ConflictException if already validated/rejected
-
-### returns.reject() - FIXED ?
-- **Fix**: Changed to `updateMany` with `WHERE status='PENDING'`
-- **Cross-test** (validate vs reject): 20/20 ?
-- **Behavior**: ConflictException if already validated/rejected
-
-### purchases.validate() - FIXED ?
-- **RED phase**: Test failed 0/20 (proved bug exists)
-- **GREEN phase**: Test passed 20/20 after fix
-- **Fix**: Changed to `updateMany` with `WHERE status='DRAFT'`
-- **Behavior**: ConflictException if already validated/cancelled
-
-### purchases.cancel() - FIXED ?
-- **Fix**: Changed to `updateMany` with `WHERE status='DRAFT'`
-- **Cross-test** (validate vs cancel): 20/20 ?
-- **Behavior**: ConflictException or BadRequestException depending on final status
-
-### inventory.validate() - ALREADY CORRECT ?
-- **Test**: Passed 20/20 immediately
-- **Code**: Already uses `updateMany` with `WHERE status='DRAFT'`
-- **Behavior**: ConflictException if already validated
-
-## Test Coverage
-
+**RED phase** (broken code):
 ```
-Operation              | Double-Click | Cross-Test | Status
----------------------- | ------------ | ---------- | ------
-returns.validate()     | 20/20 ?     | 20/20 ?   | FIXED
-returns.reject()       | -            | 20/20 ?   | FIXED
-purchases.validate()   | 20/20 ?     | 20/20 ?   | FIXED
-purchases.cancel()     | -            | 20/20 ?   | FIXED
-inventory.validate()   | 20/20 ?     | -          | WAS OK
+📊 Comportement correct: 0/20 essais
+Expected: 20
+Received: 0
+```
+Code allowed double-validation of the same return.
+
+**GREEN phase** (fixed code):
+```
+📊 Comportement correct: 20/20 essais
+✅ Test passed
 ```
 
-## Key Findings
+**Fix**: Changed to `updateMany` with `WHERE status='PENDING'`
 
-### 1. Atomic Status Transitions Work
-All operations now use `updateMany` with conditional WHERE clause:
+### purchases.validate() - FIXED  
+**Commit**: 593a8db
+
+**RED phase** (broken code):
+```
+📊 Comportement correct: 0/20 essais
+Expected: 20
+Received: 0
+```
+Code allowed double-validation of the same purchase.
+
+**GREEN phase** (fixed code):
+```
+📊 Comportement correct: 20/20 essais
+✅ Test passed
+```
+
+**Fix**: Changed to `updateMany` with `WHERE status='DRAFT'`
+
+### inventory.validate() - WAS ALREADY CORRECT
+**Commit**: d922f71
+
+**Test result** (no fix needed):
+```
+📊 Comportement correct: 20/20 essais
+✅ Test passed immediately
+```
+
+Code already used `updateMany` with `WHERE status='DRAFT'`
+
+### Cross-Tests
+**returns validate vs reject**: 20/20  
+**purchases validate vs cancel**: 20/20
+
+Both transitions are now properly atomic.
+
+## Implementation Pattern
+
+All fixed operations now use:
 ```typescript
 const result = await tx.MODEL.updateMany({
   where: { id, tenantId, status: 'EXPECTED_STATUS' },
@@ -56,30 +67,26 @@ const result = await tx.MODEL.updateMany({
 });
 
 if (result.count === 0) {
-  // Check if exists ? NotFoundException
-  // Else ? ConflictException
+  // Check if document exists
+  const doc = await tx.MODEL.findFirst({ where: { id, tenantId } });
+  if (!doc) throw new NotFoundException('...');
+  throw new ConflictException('Cannot transition (already transitioned)');
 }
+
+// Stock updates ONLY after successful atomic transition
 ```
 
-### 2. Stock Updates After Transition
-Stock changes only happen AFTER the atomic status transition succeeds. This ensures:
-- No duplicate stock adjustments
-- Consistent state (status + stock always match)
+## Test Files
 
-### 3. Proper Exception Types
-- **NotFoundException**: Document doesn't exist
-- **ConflictException**: Concurrent modification (double-click, race condition)
-- **BadRequestException**: Business rule violation (e.g., can't cancel validated purchase)
+Valid tests (test SAME document twice):
+- `returns-validate-atomic.integration-spec.ts` 
+- `returns-cross-validate-reject.integration-spec.ts`
+- `purchases-validate-atomic.integration-spec.ts`
+- `purchases-cross-validate-cancel.integration-spec.ts`
+- `inventory-validate-atomic.integration-spec.ts`
 
-## Commits
+## Next: B2 Business Rules
 
-- `d922f71` - inventory.validate() proof (already atomic)
-- `593a8db` - purchases.validate/cancel fix
-- `0ad6e5b` - returns.validate/reject fix
-- `fe55691` - revert invalid tests (tested different documents, not same document twice)
-
-## Next Steps
-
-Waiting for CI verification of pushed commits.
-
-Then: B2 additional rules (return quantities, cancelled sales, etc.)
+- Return quantities validation (cumulative)
+- Prevent validating return if sale is CANCELLED
+- Prevent cancelling sale if it has PENDING/COMPLETED returns
