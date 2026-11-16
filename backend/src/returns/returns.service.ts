@@ -1,8 +1,7 @@
 import {
   Injectable,
   NotFoundException,
-  BadRequestException,
-} from '@nestjs/common';
+  BadRequestException,  ConflictException} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ActivityLogsService } from '../activity-logs/activity-logs.service';
 import { CreateReturnDto } from './dto/return.dto';
@@ -68,22 +67,39 @@ export class ReturnsService {
     return saleReturn;
   }
 
-  async validate(tenantId: string, userId: string, id: string) {
-    const saleReturn = await this.prisma.saleReturn.findUnique({
-      where: { id, tenantId },
-      include: { items: true },
-    });
-    if (!saleReturn) throw new NotFoundException('Retour non trouvÃ©');
-    if (saleReturn.status !== 'PENDING')
-      throw new BadRequestException("Le retour n'est pas en attente");
+    async validate(tenantId: string, userId: string, id: string) {
+    let returnItems: any[];
 
     await this.prisma.$transaction(async (tx) => {
-      await tx.saleReturn.update({
-        where: { id },
+      // Transition atomique: PENDING -> COMPLETED
+      const result = await tx.saleReturn.updateMany({
+        where: { id, tenantId, status: 'PENDING' },
         data: { status: 'COMPLETED' },
       });
 
-      for (const item of saleReturn.items) {
+      if (result.count === 0) {
+        // Check if return exists
+        const saleReturn = await tx.saleReturn.findFirst({ 
+          where: { id, tenantId } 
+        });
+        if (!saleReturn) {
+          throw new NotFoundException('Retour non trouvé');
+        }
+        throw new ConflictException(
+          'Ce retour ne peut pas être validé (déjà validé ou rejeté)',
+        );
+      }
+
+      // Get items after successful transition
+      const saleReturn = await tx.saleReturn.findUnique({
+        where: { id },
+        include: { items: true },
+      });
+      if (!saleReturn) throw new NotFoundException('Retour introuvable après transition');
+      returnItems = saleReturn.items;
+
+      // Apply stock updates only after atomic status transition succeeded
+      for (const item of returnItems) {
         if (item.returnToStock) {
           await tx.product.update({
             where: { id: item.productId },
@@ -103,18 +119,24 @@ export class ReturnsService {
     return { success: true };
   }
 
-  async reject(tenantId: string, userId: string, id: string) {
-    const saleReturn = await this.prisma.saleReturn.findUnique({
-      where: { id, tenantId },
-    });
-    if (!saleReturn) throw new NotFoundException('Retour non trouvÃ©');
-    if (saleReturn.status !== 'PENDING')
-      throw new BadRequestException("Le retour n'est pas en attente");
-
-    await this.prisma.saleReturn.update({
-      where: { id },
+    async reject(tenantId: string, userId: string, id: string) {
+    // Transition atomique: PENDING -> REJECTED
+    const result = await this.prisma.saleReturn.updateMany({
+      where: { id, tenantId, status: 'PENDING' },
       data: { status: 'REJECTED' },
     });
+
+    if (result.count === 0) {
+      const saleReturn = await this.prisma.saleReturn.findFirst({ 
+        where: { id, tenantId } 
+      });
+      if (!saleReturn) {
+        throw new NotFoundException('Retour non trouvé');
+      }
+      throw new ConflictException(
+        'Ce retour ne peut pas être rejeté (déjà validé ou rejeté)',
+      );
+    }
 
     await this.activityLogs.log(tenantId, userId, 'REJECT', 'sale_return', id);
     return { success: true };
