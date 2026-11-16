@@ -2,7 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
-  ForbiddenException,
+  ForbiddenException,  ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ActivityLogsService } from '../activity-logs/activity-logs.service';
@@ -166,26 +166,37 @@ export class PurchasesService {
 
   // ─── PUT /api/purchase-orders/:id/validate ───────────────────────────────────
   async validate(tenantId: string, userId: string, id: string) {
-    const order = await this.prisma.purchaseOrder.findFirst({
-      where: { id, tenantId },
-      include: { items: true },
-    });
-    if (!order) throw new NotFoundException('Bon de commande non trouvé');
-    if (order.status !== 'DRAFT') {
-      throw new BadRequestException(
-        'Seul un bon de commande en statut DRAFT peut être validé',
-      );
-    }
+        let orderItems: any[];
 
     await this.prisma.$transaction(async (tx) => {
-      // Valider le BC
-      await tx.purchaseOrder.update({
-        where: { id },
+      // Transition atomique: DRAFT -> VALIDATED
+      const result = await tx.purchaseOrder.updateMany({
+        where: { id, tenantId, status: 'DRAFT' },
         data: { status: 'VALIDATED' },
       });
 
-      // Mettre à jour les stocks
-      for (const item of order.items) {
+      if (result.count === 0) {
+        const order = await tx.purchaseOrder.findFirst({ 
+          where: { id, tenantId } 
+        });
+        if (!order) {
+          throw new NotFoundException('Bon de commande non trouv�');
+        }
+        throw new ConflictException(
+          'Ce bon de commande ne peut pas �tre valid� (d�j� valid� ou annul�)',
+        );
+      }
+
+      // Get items after successful transition
+      const order = await tx.purchaseOrder.findUnique({
+        where: { id },
+        include: { items: true },
+      });
+      if (!order) throw new NotFoundException('Bon de commande introuvable apr�s transition');
+      orderItems = order.items;
+
+      // Apply stock updates only after atomic status transition succeeded
+      for (const item of orderItems) {
         await tx.product.update({
           where: { id: item.productId },
           data: { qty: { increment: item.qty } },
@@ -206,20 +217,28 @@ export class PurchasesService {
 
   // ─── PUT /api/purchase-orders/:id/cancel ────────────────────────────────────
   async cancel(tenantId: string, userId: string, id: string) {
-    const order = await this.prisma.purchaseOrder.findFirst({
-      where: { id, tenantId },
-    });
-    if (!order) throw new NotFoundException('Bon de commande non trouvé');
-    if (order.status === 'VALIDATED') {
-      throw new BadRequestException(
-        "Impossible d'annuler un bon de commande déjà validé",
-      );
-    }
-
-    await this.prisma.purchaseOrder.update({
-      where: { id },
+    // Transition atomique: DRAFT -> CANCELLED
+    const result = await this.prisma.purchaseOrder.updateMany({
+      where: { id, tenantId, status: 'DRAFT' },
       data: { status: 'CANCELLED' },
     });
+
+    if (result.count === 0) {
+      const order = await this.prisma.purchaseOrder.findFirst({
+        where: { id, tenantId }
+      });
+      if (!order) {
+        throw new NotFoundException('Bon de commande non trouv�');
+      }
+      if (order.status === 'VALIDATED') {
+        throw new BadRequestException(
+          "Impossible d'annuler un bon de commande d�j� valid�",
+        );
+      }
+      throw new ConflictException(
+        'Ce bon de commande ne peut pas �tre annul� (conflit de statut)',
+      );
+    }
 
     await this.activityLogs.log(
       tenantId,
@@ -229,7 +248,7 @@ export class PurchasesService {
       id,
     );
 
-    return { message: 'Bon de commande annulé avec succès' };
+    return { message: 'Bon de commande annul� avec succ�s' };
   }
 
   // ─── DELETE /api/purchase-orders/:id ────────────────────────────────────────
